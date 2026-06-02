@@ -61,16 +61,18 @@ echo "📜 Following deployment logs (Ctrl-C stops following; the deployment kee
 echo "────────────────────────────────────────"
 coolify $CTX_FLAG app deployments logs "$APP_UUID" -f
 
-# After following ends, report the final status
+# After following ends, report the final status.
+# Use `app deployments list <app-uuid>` — it is already scoped to this app, so we
+# don't have to filter the global `deploy list` by uuid. (The global list has no
+# reliable app-UUID column: `application_id` is an internal numeric id, not the
+# app uuid, so matching it against $APP_UUID never works for by-uuid deploys.)
 echo "────────────────────────────────────────"
 echo "🔎 Latest deployment status:"
 if command -v jq >/dev/null 2>&1; then
-  # Field names verified against coolify-cli v1.6.2 (internal/models/deployment.go):
-  #   a deployment exposes application_id (the app UUID) / application_name / deployment_uuid / status / created_at.
-  #   There is no application_uuid or resource_uuid, so we correlate on application_id (uuid) or application_name (by-name deploys).
-  coolify $CTX_FLAG deploy list --format=json 2>/dev/null \
-    | jq -r --arg u "$APP_UUID" --arg n "$TARGET" '[.[] | select(.application_id==$u or .application_name==$n)] | sort_by(.created_at) | last | "  Status: \(.status // "unknown")  Deployment ID: \(.deployment_uuid // .id // "?")"' \
-    2>/dev/null || coolify $CTX_FLAG deploy list
+  coolify $CTX_FLAG app deployments list "$APP_UUID" --format=json 2>/dev/null \
+    | jq -r 'sort_by(.created_at) | last
+             | "  Status: \(.status // "unknown")  Deployment ID: \(.deployment_uuid // .uuid // "?")"' \
+    2>/dev/null || coolify $CTX_FLAG app deployments list "$APP_UUID"
 else
-  coolify $CTX_FLAG deploy list
+  coolify $CTX_FLAG app deployments list "$APP_UUID"
 fi
