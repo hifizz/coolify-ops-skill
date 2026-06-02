@@ -133,6 +133,7 @@ coolify-ops/
 │   ├── database-access.md      # Database external access: protocol basics + internal/tunnel/hardened public + domains
 │   └── safety-rules.md         # Destructive-operation red lines & confirmation checklist
 └── scripts/
+    ├── doctor.sh               # Preflight: CLI version / jq / connectivity / token abilities
     ├── install-cli.sh          # Cross-platform installer for the official CLI
     ├── health-check.sh         # One-shot health check (CLI / context / resource status)
     ├── deploy-and-watch.sh     # Deploy + follow logs until success / failure

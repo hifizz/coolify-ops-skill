@@ -129,6 +129,7 @@ coolify-ops/
 │   ├── database-access.md      # 数据库对外访问：协议认知 + 内网/隧道/公网加固 + 域名连库
 │   └── safety-rules.md         # 危险操作红线与确认清单
 └── scripts/
+    ├── doctor.sh               # 装上先自检：CLI 版本 / jq / 连通 / token 权限
     ├── install-cli.sh          # 跨平台安装官方 CLI
     ├── health-check.sh         # 一键体检（CLI / context / 资源状态）
     ├── deploy-and-watch.sh     # 部署 + 自动跟日志直到 success / fail

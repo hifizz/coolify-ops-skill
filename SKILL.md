@@ -156,7 +156,8 @@ The Web UI is still handy for first-time visual setup, dashboards/metrics, and s
 
 ## Scripts
 
-- `scripts/install-cli.sh` — cross-platform install of the official CLI (macOS/Linux, auto-detects architecture).
+- `scripts/doctor.sh [context]` — **run this first** on install or when troubleshooting. One-screen preflight: CLI version ≥ verified baseline, `jq` present, context connectivity/auth, and token abilities (a read probe + a non-destructive deploy probe that targets a bogus uuid so nothing is ever deployed).
+- `scripts/install-cli.sh` — cross-platform install of the official CLI (macOS/Linux; curl → brew → go install fallback).
 - `scripts/health-check.sh` — one-shot health check: whether the CLI is present, whether the context connects, and the state of each resource. Run it first when troubleshooting "how's everything doing overall".
 - `scripts/deploy-and-watch.sh <app-uuid-or-name>` — triggers a deploy and automatically follows the logs, only returning once the deploy is success or failed. The default recommended way to deploy.
 - `scripts/gen-reference.sh` — dumps this CLI version's full command reference (via `coolify docs markdown` / `coolify docs llms`) into `references/_generated/`. Run it once after install/upgrade; treat the output as the authoritative flag source.
