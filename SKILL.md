@@ -99,7 +99,7 @@ For variables needed at build time, add `--build-time`; for preview environments
 coolify database list --format=json
 coolify database create postgresql --server-uuid <s> --project-uuid <p> \
   --environment-name production --name <n> --instant-deploy
-coolify database backup create <db-uuid> --frequency "0 2 * * *" --enabled --retention-days-local 7
+coolify database backup create <db-uuid> --frequency "0 2 * * *" --enabled --retention-days-locally 7
 coolify database backup trigger <db-uuid> <backup-uuid>   # back up immediately
 ```
 
@@ -108,10 +108,15 @@ Supported types: postgresql / mysql / mariadb / mongodb / redis / keydb / clickh
 
 **External access branch**: when a request involves "make the database externally accessible / reachable from another machine / reachable from Vercel", or "connect to the database via a domain" / "expose the database port", **first read `references/database-access.md`**, and confirm with the user following its recommended order (**internal > tunnel > hardened public exposure**); **don't go straight to `--is-public`**. Key points: a database speaks TCP, not HTTP (`https://db.example.com` won't connect); a client on the same machine as the database uses the internal network, an external machine that can keep a process running uses a tunnel, and **serverless platforms like Vercel go through the HTTP layer (a raw TCP tunnel won't work for them)**; if public exposure is truly required, first follow the standard `--is-public` procedure in `safety-rules.md` and warn that there is no TLS by default.
 
-## Known Capability Boundaries
+## Resource Creation
 
-- **Creating an application from scratch** (binding a Git repo, setting build commands) is currently only partially supported by the CLI: `app update` can change fields, but a full `app create` isn't exposed yet. Creating a new application for the first time usually still has to be done in the Web UI, with the CLI taking over subsequent operations. When you hit a "create a new app" request, clearly tell the user about this limitation and guide them to build the skeleton in the UI before using the CLI to configure and deploy.
-- **Creating one-click services** is the same: it has to be done by picking a template in the Web UI, with the CLI responsible for env sync and lifecycle management after creation.
+The CLI can create resources from scratch (this is no longer Web-UI-only):
+
+- **App**: `coolify app create <public|github|deploy-key|dockerfile|dockerimage> --server-uuid <s> --project-uuid <p> --environment-name <env> ...` — binds a git repo (or Dockerfile/image), sets build pack and ports. See `references/cli-cheatsheet.md`.
+- **One-click service**: `coolify service create <type>` (run `coolify service create --list-types` to list types like wordpress / ghost / n8n / supabase).
+- **Database**: `coolify database create <type> ...` (path E above).
+
+The Web UI is still handy for first-time visual setup, dashboards/metrics, and some advanced settings — but creation no longer requires it.
 
 ## Reference Files
 

@@ -65,11 +65,11 @@ coolify $CTX_FLAG app deployments logs "$APP_UUID" -f
 echo "────────────────────────────────────────"
 echo "🔎 Latest deployment status:"
 if command -v jq >/dev/null 2>&1; then
-  # ⚠️ The field names (application_uuid / resource_uuid / deployment_uuid / status) are inferred from common conventions and have not been verified against the real CLI.
-  #    On first use, run `coolify deploy list --format=json` to confirm the actual field names before relying on the filter below;
-  #    if the field names do not match, jq will filter out no results and automatically fall back to `coolify deploy list` (table) output.
+  # Field names verified against coolify-cli v1.6.2 (internal/models/deployment.go):
+  #   a deployment exposes application_id (the app UUID) / application_name / deployment_uuid / status / created_at.
+  #   There is no application_uuid or resource_uuid, so we correlate on application_id (uuid) or application_name (by-name deploys).
   coolify $CTX_FLAG deploy list --format=json 2>/dev/null \
-    | jq -r --arg u "$APP_UUID" '[.[] | select(.application_uuid==$u or .resource_uuid==$u)] | sort_by(.created_at) | last | "  Status: \(.status // "unknown")  Deployment ID: \(.deployment_uuid // .uuid // "?")"' \
+    | jq -r --arg u "$APP_UUID" --arg n "$TARGET" '[.[] | select(.application_id==$u or .application_name==$n)] | sort_by(.created_at) | last | "  Status: \(.status // "unknown")  Deployment ID: \(.deployment_uuid // .id // "?")"' \
     2>/dev/null || coolify $CTX_FLAG deploy list
 else
   coolify $CTX_FLAG deploy list

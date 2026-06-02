@@ -49,7 +49,17 @@ coolify app start|stop|restart <uuid>      # lifecycle
 coolify app delete <uuid>                  # delete (dangerous, requires confirmation; do not proactively add -f)
 coolify app logs <uuid>                     # runtime logs (container stdout)
 
-# Change config (note: this edits an existing app, it does not create one)
+# Create a new app from a git repo / Dockerfile / image (pick the source subcommand)
+coolify app create public      --server-uuid <s> --project-uuid <p> --environment-name <env> \
+  --git-repository <url> --git-branch <branch> --build-pack nixpacks --ports-exposes 3000
+coolify app create github      --server-uuid <s> --project-uuid <p> --environment-name <env> \
+  --github-app-uuid <uuid> --git-repository <user/repo> --git-branch <branch> --ports-exposes 3000
+coolify app create deploy-key  ...    # private repo via SSH deploy key
+coolify app create dockerfile  ...    # build from a custom Dockerfile
+coolify app create dockerimage --server-uuid <s> --project-uuid <p> --environment-name <env> \
+  --docker-registry-image-name <image:tag> --ports-exposes 80
+
+# Change config of an EXISTING app (update, not create)
 coolify app update <uuid> \
   --git-branch <branch> \
   --git-repository <url> \
@@ -88,7 +98,7 @@ coolify deploy get <deployment-uuid>      # single deployment details
 coolify deploy cancel <deployment-uuid>   # cancel an in-progress deployment
 ```
 
-> ⚠️ **The field names of `deploy list --format=json` are unverified**: `deploy-and-watch.sh` filters by `application_uuid` / `resource_uuid` / `deployment_uuid` / `status` to locate the most recent deployment, but these field names are inferred from common conventions. On first use, run `coolify deploy list --format=json` to inspect the real structure, then decide which field to filter on.
+> **`deploy list --format=json` fields** (verified against coolify-cli v1.6.2 — `internal/models/deployment.go`): `id`, `deployment_uuid`, `application_id`, `application_name`, `server_name`, `status`, `commit`, `commit_message`, `deployment_url`, `finished_at`, `created_at`, `updated_at`. To correlate a deployment to an app, match `application_id` (the app UUID) or `application_name` — there is **no** `application_uuid` or `resource_uuid`.
 
 ## Env
 
@@ -129,13 +139,13 @@ coolify database delete <uuid>   # dangerous, requires confirmation
 coolify database backup list <db-uuid>
 coolify database backup create <db-uuid> \
   --frequency "0 2 * * *" --enabled \
-  [--save-s3 --s3-storage-uuid <uuid>] \           # ⚠️ unverified — confirm with --help
-  [--retention-days-local 7] [--retention-amount-local 5]   # --retention-amount-local ⚠️ unverified — confirm with --help
+  [--save-s3 --s3-storage-uuid <uuid>] \
+  [--retention-days-locally 7] [--retention-amount-locally 5]
 coolify database backup trigger <db-uuid> <backup-uuid>       # back up immediately
 coolify database backup executions <db-uuid> <backup-uuid>    # backup execution records
 ```
 
-> ⚠️ **The following backup flags have not been verified against the real CLI** and are inferred from common conventions: `--save-s3`, `--s3-storage-uuid`, `--retention-amount-local`. Before using them, run `coolify database backup create --help` to confirm the real flag names and semantics; `--retention-days-local` should likewise be confirmed with --help.
+> Backup flags verified against coolify-cli v1.6.2. Local retention uses the **`-locally`** suffix (`--retention-days-locally` / `--retention-amount-locally`) — there is **no** `--retention-*-local`. S3 has the matching `--retention-days-s3` / `--retention-amount-s3`, plus `--retention-max-storage-locally` / `--retention-max-storage-s3`, `--databases-to-backup`, `--disable-local-backup`, `--dump-all`, and `--timeout`.
 
 cron quick notes: `"0 2 * * *"` = every day at 02:00; `"0 */6 * * *"` = every 6 hours.
 
@@ -144,6 +154,8 @@ cron quick notes: `"0 2 * * *"` = every day at 02:00; `"0 */6 * * *"` = every 6 
 ```bash
 coolify service list
 coolify service get <uuid>
+coolify service create <type> --server-uuid <s> --project-uuid <p> --environment-name <env> [--name <n>] [--instant-deploy]
+coolify service create --list-types      # list all one-click types (wordpress, ghost, n8n, supabase, ...)
 coolify service start|stop|restart <uuid>
 coolify service delete <uuid>            # dangerous, requires confirmation
 coolify service env sync <uuid> --file .env

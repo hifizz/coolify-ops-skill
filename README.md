@@ -21,7 +21,7 @@ The agent enables this skill automatically: look up the UUID → trigger the dep
 - The official **coolify CLI** ([coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli), the Go build — install it with the script below).
 - **Claude Code**, or any other agent that supports `SKILL.md` (e.g. Codex).
 
-> Compatibility: Tested against coolify-cli vX.X.X / Coolify vX.X.X (fill in the versions you actually verified).
+> Compatibility: tested against coolify-cli v1.6.2 / Coolify v4.1.1.
 
 ## Install
 
@@ -32,10 +32,14 @@ With Node.js installed, add this skill to your agent in one command (no clone ne
 ```bash
 # Project-level — into ./.claude/skills (the default when run inside a project)
 npx skills add hifizz/coolify-ops-skill
+```
 
+```bash
 # Global / user-level — into ~/.claude/skills (available in every project)
 npx skills add hifizz/coolify-ops-skill -g
+```
 
+```bash
 # Target a specific agent explicitly (defaults to the detected one)
 npx skills add hifizz/coolify-ops-skill --agent claude-code
 ```
@@ -93,31 +97,32 @@ Once configured, you don't need to memorize commands — describe what you want 
 - **Databases & backups**: "Set up a daily 2am backup for my-db", "Let me connect to this database from my laptop"
 - **Domains / resources**: "Bind a domain to it", "Bump memory to 1G"
 
-## Capabilities (can / can't)
+## Capabilities
 
-| ✅ Can do | ❌ Can't do (use the Web UI) |
+| ✅ The CLI can | 🖥️ Still nicer in the Web UI |
 |---|---|
-| Deploy / redeploy existing apps & services | **Create an app from scratch** (bind a Git repo, set build commands) — not fully supported by the CLI |
-| Operate & troubleshoot (runtime / deploy logs, status) | **Create one-click services** (template services) — pick the template in the Web UI |
+| **Create apps** from a public/private git repo, Dockerfile, or image (`app create`) | First-time visual scaffolding & browsing one-click templates |
+| **Create one-click services** (`service create --list-types`) | Live dashboards, metrics & resource graphs |
+| Create & back up databases | A few advanced / visual-only settings |
+| Deploy / redeploy, follow logs, troubleshoot | |
 | Sync environment variables (`env sync`, batch upsert) | |
-| Create & back up databases | |
 | Lifecycle management (start / stop / restart) | |
 | Decide how a database is exposed (internal / tunnel / hardened public) | |
 
-> Convention: build the "skeleton" in the Web UI (a new app / one-click service), then let the CLI take over configuration, deployment, and operations.
+> The CLI now covers resource creation end-to-end; the Web UI remains handy for visual setup, dashboards, and a few advanced settings.
 
 ## Things to watch out for
 
 - **Destructive actions are confirmed.** Deleting a database/app, stopping production, force-deploying, and the like — the agent restates the impact and waits for your confirmation, and **never adds `-f` to skip confirmation on its own**. See [`references/safety-rules.md`](references/safety-rules.md).
 - **Don't expose databases to the public carelessly.** When a database needs external access, the order of preference is **internal > tunnel > hardened public**, and `--is-public` is off by default. To connect over a domain, turn off Cloudflare's orange cloud, and note that Coolify databases ship **without TLS** by default (a plaintext public connection leaks credentials). Full guide: [`references/database-access.md`](references/database-access.md).
 - **Credentials stay private.** The agent won't print tokens in its replies or write them to files; passwords / connection strings surfaced by `--show-sensitive` are redacted as needed.
-- **Trust `--help` over the cheatsheet.** The CLI evolves; a few flags marked ⚠️ in the cheatsheet are unverified — confirm them with `coolify <cmd> --help` before relying on them.
+- **Trust `--help` over the cheatsheet.** The CLI evolves; if a flag or JSON field ever looks off, confirm with `coolify <cmd> --help` before relying on it.
 
 ## Project layout
 
 ```
 coolify-ops/
-├── SKILL.md                    # Entry point: principles + decision tree + capability boundaries
+├── SKILL.md                    # Entry point: principles + decision tree + resource creation
 ├── references/
 │   ├── cli-cheatsheet.md       # Full command reference + jq recipes + troubleshooting table
 │   ├── deploy-patterns.md      # Node/Next/Docker/static deploy templates + env layering + magic vars
@@ -131,8 +136,5 @@ coolify-ops/
 
 ## License
 
-[MIT](LICENSE) © 2025 hifizz
+[MIT](LICENSE) © 2026 hifizz
 
----
-
-> Documentation is available in [English](README.md) and [简体中文](README.zh-CN.md).
