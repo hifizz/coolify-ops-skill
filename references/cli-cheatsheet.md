@@ -112,7 +112,7 @@ coolify deploy cancel <deployment-uuid>   # cancel an in-progress deployment
 
 ## Env
 
-> The env subcommands are identical across **app, service, and database** (e.g. `coolify database env list <db-uuid>`, `coolify database env sync <db-uuid> --file .env`); the examples below use app.
+> The env subcommands exist for **app, service, and database**. App and service share the full flag set (incl. `--build-time` / `--runtime` / `--preview`). **Database env is reduced** — a database has no build step, so `database env sync` only takes `-f`/`--file` + `--is-literal`, and `database env create` has no `--build-time`/`--runtime`/`--preview` either (passing them errors with `unknown flag`). The examples below use app.
 
 ```bash
 coolify app env list <app-uuid>
@@ -159,9 +159,9 @@ coolify database backup create <db-uuid> \
 coolify database backup trigger <db-uuid> <backup-uuid>       # back up immediately
 coolify database backup executions <db-uuid> <backup-uuid>    # backup execution records
 
-# databases also have env and storage subcommands (same shape as app):
+# databases also have env (reduced flags — no --build-time/--runtime/--preview) and storage:
 coolify database env list <db-uuid>
-coolify database env sync <db-uuid> --file .env               # see Env section for flag caveats
+coolify database env sync <db-uuid> --file .env               # only -f/--file + --is-literal
 coolify database storage list <db-uuid>                       # see Storage section
 ```
 

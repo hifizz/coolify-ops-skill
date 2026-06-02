@@ -29,16 +29,17 @@ if ! command -v coolify >/dev/null 2>&1; then
   exit 1
 fi
 VER="$(coolify version 2>/dev/null | head -n1 | tr -d '[:space:]')"
+VER_NUM="${VER#v}"   # strip an optional leading 'v' — some builds report 'v1.6.2'
 if [ -z "$VER" ]; then
   warn "installed, but couldn't read the version."
 elif printf '' | sort -V >/dev/null 2>&1; then
-  LOWEST="$(printf '%s\n%s\n' "$VER" "$MIN_VER" | sort -V | head -n1)"
+  LOWEST="$(printf '%s\n%s\n' "$VER_NUM" "$MIN_VER" | sort -V | head -n1)"
   if [ "$LOWEST" = "$MIN_VER" ]; then
     ok "version $VER (≥ verified baseline $MIN_VER)"
   else
     warn "version $VER is older than the verified baseline $MIN_VER — flags/fields may differ; consider 'coolify update'."
   fi
-elif [ "$VER" = "$MIN_VER" ]; then
+elif [ "$VER_NUM" = "$MIN_VER" ]; then
   ok "version $VER (matches verified baseline $MIN_VER)"
 else
   warn "version $VER (verified baseline is $MIN_VER; this 'sort' can't compare ordering)."
