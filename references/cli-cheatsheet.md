@@ -1,6 +1,6 @@
 # Coolify CLI Command Quick Reference
 
-> This is a command reference for the `coolify` CLI (coollabsio/coolify-cli, the Go version). The CLI is continuously evolving, so **flags should be taken from the actual output of `coolify <cmd> --help`**. This table is a quick reference for commonly used items.
+> This is a command reference for the `coolify` CLI (coollabsio/coolify-cli, the Go version). The CLI is continuously evolving, so **flags should be taken from the actual output of `coolify <cmd> --help`** — or, for a version-exact dump, from `references/_generated/` (run `bash scripts/gen-reference.sh`, which calls `coolify docs markdown` / `coolify docs llms`). **That generated reference is authoritative; this table is only a high-frequency quick reference** for commonly used items, jq recipes, and troubleshooting.
 
 ## Table of Contents
 
@@ -12,6 +12,10 @@
 - [Database](#database)
 - [Service](#service)
 - [Server](#server)
+- [GitHub App integrations](#github-app-integrations)
+- [Private keys](#private-keys)
+- [Storage (persistent volumes)](#storage-persistent-volumes)
+- [Teams](#teams)
 - [Output formats & global flags](#output-formats--global-flags)
 - [Troubleshooting table](#troubleshooting-table)
 
@@ -48,6 +52,9 @@ coolify app get <uuid>                     # details
 coolify app start|stop|restart <uuid>      # lifecycle
 coolify app delete <uuid>                  # delete (dangerous, requires confirmation; do not proactively add -f)
 coolify app logs <uuid>                     # runtime logs (container stdout)
+coolify app logs <uuid> -f                  # follow runtime logs (tail -f style)
+coolify app logs <uuid> -n 100              # last N lines (-n/--lines, default 100)
+coolify app previews delete <uuid> <pr-id>  # clean up a PR preview deployment
 
 # Create a new app from a git repo / Dockerfile / image (pick the source subcommand)
 coolify app create public      --server-uuid <s> --project-uuid <p> --environment-name <env> \
@@ -80,9 +87,12 @@ coolify app update <uuid> \
 coolify app deployments list <app-uuid>                  # past deployments
 coolify app deployments logs <app-uuid>                  # all logs from the most recent deployment
 coolify app deployments logs <app-uuid> -f               # follow in real time (tail -f style)
-coolify app deployments logs <app-uuid> -n 100           # last 100 lines
+coolify app deployments logs <app-uuid> -n 100           # last N lines (-n/--lines, 0 = all)
+coolify app deployments logs <app-uuid> --debuglogs      # include hidden/internal build commands
 coolify app deployments logs <app-uuid> <deployment-uuid> # a specific deployment
 ```
+
+> Both `app logs` and `app deployments logs` share `-f`/`--follow` and `-n`/`--lines`. Difference: `app logs` defaults to 100 lines; `app deployments logs` defaults to `0` = all, and additionally supports `--debuglogs`.
 
 **Difference between runtime logs vs deployment logs**: `app logs` shows the container's stdout after it is up and running (for troubleshooting runtime crashes); `app deployments logs` shows the build → push → startup process (for troubleshooting deployment failures).
 
@@ -92,7 +102,7 @@ coolify app deployments logs <app-uuid> <deployment-uuid> # a specific deploymen
 coolify deploy name <app-name>           # deploy by name (recommended, easy to remember)
 coolify deploy uuid <uuid>               # deploy by UUID
 coolify deploy batch <a>,<b>,<c>         # batch deploy multiple
-coolify deploy name <app-name> -f        # force deploy (deploy even with no changes; use with caution)
+coolify deploy name <app-name> --force   # force deploy (deploy even with no changes; --force only, no -f short)
 coolify deploy list                       # all deployment records
 coolify deploy get <deployment-uuid>      # single deployment details
 coolify deploy cancel <deployment-uuid>   # cancel an in-progress deployment
@@ -102,7 +112,7 @@ coolify deploy cancel <deployment-uuid>   # cancel an in-progress deployment
 
 ## Env
 
-> The env subcommands for app and service are identical; the example below uses app.
+> The env subcommands exist for **app, service, and database**. App and service share the full flag set (incl. `--build-time` / `--runtime` / `--preview`). **Database env is reduced** — a database has no build step, so `database env sync` only takes `-f`/`--file` + `--is-literal`, and `database env create` has no `--build-time`/`--runtime`/`--preview` either (passing them errors with `unknown flag`). The examples below use app.
 
 ```bash
 coolify app env list <app-uuid>
@@ -113,11 +123,16 @@ coolify app env delete <app-uuid> <env-uuid>
 
 # Batch sync from .env (most common)
 coolify app env sync <app-uuid> --file .env
-coolify app env sync <app-uuid> --file .env.production --build-time
+coolify app env sync <app-uuid> --file .env.public --build-time=true    # frontend / build-time vars
+coolify app env sync <app-uuid> --file .env.secret --build-time=false   # runtime-only, keep out of build layer
 ```
 
 **sync behavior**: updates existing + creates missing, and **does not delete** variables not present in the file.
-**flag meanings**: `--build-time` available at build time; `--preview` available for preview deployments; `--is-literal` no variable interpolation (use when the value contains `$`); `--is-multiline` multi-line values.
+**sync flags**: `--build-time` (default **true**) available at build time; `--runtime` (default **true**) available at runtime; `--preview` available in preview deployments; `--is-literal` no variable interpolation (use when the value contains `$`); `-f`/`--file` is the **path** (required), not `--force`.
+
+> ⚠️ **`--help` default vs. real behavior**: the help shows `--build-time (default: true)` and `--runtime (default: true)`, but a value is only sent when you **explicitly** pass the flag — a bare `sync` leaves both to the server default. So don't assume "bare sync = everything build-time", and don't assume "omitting `--build-time` keeps secrets out of the build layer". When you need a specific behavior, set it explicitly (`--build-time=false` / `--build-time=true`). And `sync` applies **one flag set to the entire file**, so split sensitive vs. non-sensitive into separate files/passes.
+
+> `env create` carries the same `--build-time` / `--runtime` (both default true), plus `--is-multiline` and `--comment`.
 
 ## Database
 
@@ -143,6 +158,11 @@ coolify database backup create <db-uuid> \
   [--retention-days-locally 7] [--retention-amount-locally 5]
 coolify database backup trigger <db-uuid> <backup-uuid>       # back up immediately
 coolify database backup executions <db-uuid> <backup-uuid>    # backup execution records
+
+# databases also have env (reduced flags — no --build-time/--runtime/--preview) and storage:
+coolify database env list <db-uuid>
+coolify database env sync <db-uuid> --file .env               # only -f/--file + --is-literal
+coolify database storage list <db-uuid>                       # see Storage section
 ```
 
 > Backup flags verified against coolify-cli v1.6.2. Local retention uses the **`-locally`** suffix (`--retention-days-locally` / `--retention-amount-locally`) — there is **no** `--retention-*-local`. S3 has the matching `--retention-days-s3` / `--retention-amount-s3`, plus `--retention-max-storage-locally` / `--retention-max-storage-s3`, `--databases-to-backup`, `--disable-local-backup`, `--dump-all`, and `--timeout`.
@@ -169,6 +189,61 @@ coolify server get <uuid>                # details
 coolify server get <uuid> --resources    # including the resources on that server and their status
 coolify server validate <uuid>           # validate connection
 coolify server domains <uuid>            # domains on that server
+coolify server add <name> <ip> <private-key-uuid> [-p 22] [-u root] [--validate]   # register a new server
+coolify server remove <uuid>             # remove a server (dangerous, requires confirmation)
+```
+
+## GitHub App integrations
+
+For deploying **private** GitHub repos; `app create github` needs the resulting App UUID (`--github-app-uuid`). Aliases: `gh`, `github-app`, `github-apps`.
+
+```bash
+coolify github list                                  # list GitHub App integrations
+coolify github get <app-uuid>                         # details
+coolify github repos <app-uuid>                       # repos the App can access
+coolify github branches <app-uuid> <owner/repo>       # branches of a repo
+coolify github create --name <n> --api-url https://api.github.com --html-url https://github.com \
+  --app-id <id> --installation-id <id> --client-id <id> --client-secret <secret> \
+  --private-key-uuid <uuid>                            # register a GitHub App (all listed flags required)
+coolify github update <app-uuid> ...                  # update integration
+coolify github delete <app-uuid>                      # delete integration (dangerous)
+```
+
+## Private keys
+
+SSH private keys for server auth and `app create deploy-key` private-repo deploys. Aliases: `private-keys`, `key`, `keys`.
+
+```bash
+coolify private-key list                                   # list keys
+coolify private-key add <key-name> <private-key-or-file>   # add a key (inline value or a file path)
+coolify private-key remove <uuid>                          # remove a key (dangerous)
+```
+
+## Storage (persistent volumes)
+
+Persistent volumes / file mounts for stateful resources — same shape for `app` / `database` / `service` (alias: `storages`).
+
+```bash
+coolify app storage list <app-uuid>
+coolify app storage create <app-uuid> --type persistent --name <vol> --mount-path /data
+coolify app storage create <app-uuid> --type file --mount-path /etc/app/config.yml --content "$(cat config.yml)"
+coolify app storage update <app-uuid> --uuid <storage-uuid> --type persistent --mount-path /data   # update: storage id is --uuid, NOT a 2nd positional
+coolify app storage delete <app-uuid> <storage-uuid>       # delete: storage id IS a 2nd positional (dangerous: may delete persisted data)
+
+# database / service are identical — just swap the noun:
+coolify database storage list <db-uuid>
+coolify service storage list <service-uuid>
+```
+
+## Teams
+
+Tokens are **team-scoped** (see `references/safety-rules.md`); these show which team you're acting as. Alias: `team`.
+
+```bash
+coolify teams list             # all teams visible to the token
+coolify teams current          # the currently authenticated team
+coolify teams get <id>         # team details
+coolify teams members list     # members of the current team
 ```
 
 ## Output formats & global flags
@@ -178,13 +253,17 @@ coolify server domains <uuid>            # domains on that server
 --format=json       # for scripts/Agents to parse, used with jq
 --format=pretty     # indented JSON, for debugging
 
---context=<name>    # temporarily specify a context
---host <fqdn>       # temporarily override the URL
+--context=<name>    # temporarily target a different context (the only ad-hoc way to switch instance)
 --token <token>     # temporarily override the token (CI scenarios)
 -s, --show-sensitive # show sensitive info (token/IP)
 --debug             # print the full HTTP request/response (troubleshooting lifesaver)
--f, --force         # skip confirmation (only use after the user has explicitly agreed)
 ```
+
+> **`-f` is overloaded and per-command — there is no global `--force`/`-f` in v1.6.2:**
+> - `coolify app delete <uuid> -f` / `--force` → **skips the delete confirmation prompt** (never add on your own initiative).
+> - `coolify deploy name|uuid <x> --force` → **force a redeploy** (note: `--force` only, **no `-f` short form** here).
+> - `coolify {app,service,database} env sync <x> -f <file>` → here `-f` is `--file`, the `.env` **path** (required) — completely safe, use it freely.
+> - `coolify database delete` has **no** force flag (instead: `--delete-volumes` / `--delete-configurations` / … , all default `true` — see `references/safety-rules.md`).
 
 Common jq recipes:
 
@@ -202,7 +281,7 @@ coolify resources list --format=json | jq -r '.[] | select(.status!="running") |
 |---|---|---|
 | `connection refused` / timeout | Wrong URL; VPS firewall not opened; Coolify not running | First test the web entry point with `curl -I <url>`; check the VPS firewall ports |
 | `401 Unauthorized` | Token wrong or deleted | Regenerate the token in the Web UI, update with `coolify context set-token` |
-| `403 Forbidden` | Insufficient token permissions | Check the permission scope of that token in Coolify |
+| `403 Forbidden` | Token is missing a required ability (`read`/`deploy`/`write`/`read:sensitive`) | Re-run with `--debug` and read the 403 body — it lists the **missing permissions**. Add that ability to the token in the Web UI; never escalate to a `root` token. See `references/safety-rules.md` |
 | `certificate verify failed` | HTTPS certificate not configured properly | **Preferably** configure TLS in Coolify before connecting. ⚠️ Downgrading to `http://` sends the Bearer Token in plaintext over the wire; only for trusted internal networks/temporary troubleshooting, and the token should be rotated afterward |
 | Command can't find a resource | UUID expired/misremembered | Run `<resource> list --format=json` again to get the UUID |
 | Unsure about a flag | CLI version differences | `coolify <cmd> --help` to see the actual flags for the current version |

@@ -127,7 +127,7 @@ postgresql://user:pass@db.example.com:5432/mydb
 **The database containers Coolify starts by default usually do not have SSL/TLS enabled.** This means:
 
 - A plaintext connection over the public internet exposes the **account, password, and query data** entirely on the wire, and any intermediate hop can sniff it.
-- **Do not assume the connection is encrypted.** Writing `sslmode=require` in the connection string does not mean the server actually supports it — if the database has no certificate configured, it will either fail to connect or silently downgrade.
+- **Do not assume the connection is encrypted.** Writing `sslmode=require` in the connection string tells the *client* to demand TLS — if the database has no certificate configured, the connection will **fail** (which is the safe outcome). But weaker modes like `sslmode=prefer` may silently fall back to plaintext, giving a false sense of security.
 
 Therefore:
 

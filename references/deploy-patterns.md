@@ -64,12 +64,16 @@ coolify app update <uuid> \
 ```
 
 Key points:
-- `NEXT_PUBLIC_*` variables are **injected at build time** and must be synced with `--build-time`, otherwise the frontend won't get them:
+- **`env sync` applies one set of flags to the whole file** — it can't tag individual variables within a single sync. So split a mixed `.env` and sync in two passes.
+- `NEXT_PUBLIC_*` variables are **injected at build time**; sync them with `--build-time=true`, otherwise the frontend won't get them:
   ```bash
-  coolify app env sync <uuid> --file .env.production --build-time
+  coolify app env sync <uuid> --file .env.public --build-time=true   # frontend / build-time vars
   ```
-- Server-side runtime variables (database connection strings, API keys) can be synced normally and don't need `--build-time`.
-- Note the distinction: if a single `.env` contains both `NEXT_PUBLIC_*` and server-side secrets, you may need to sync in two passes (one with `--build-time` for just the frontend variables, one without for the backend), or you can make everything build-time, but then the secrets end up in the build layer — weigh the security tradeoff.
+- Server-side secrets (database connection strings, API keys) should be **kept out of the build layer**. ⚠️ But `--build-time` **defaults to `true`**, so a *bare* sync (no flag) does not reliably exclude them — you must pass `--build-time=false` explicitly:
+  ```bash
+  coolify app env sync <uuid> --file .env.secret --build-time=false  # runtime-only secrets
+  ```
+- In short: frontend file → `--build-time=true`; secret file → `--build-time=false`. **Do not rely on "omitting `--build-time`" to keep secrets out of the build layer** — see the warning in `references/cli-cheatsheet.md` (Env) about the `--help` default vs. real behavior.
 
 ## Docker / Docker Compose
 
@@ -106,7 +110,7 @@ Recommended local → Coolify mapping:
 |---|---|---|
 | `.env.local` | Local development, **not committed, not synced** | don't sync |
 | `.env.production` | Production config (the part without secrets) | `coolify app env sync <uuid> --file .env.production` |
-| Secrets | Database strings/API keys, etc. | separate `env create`, or put them in a gitignored `.env.secrets` and sync separately |
+| Secrets | Database strings/API keys, etc. | separate `env create`, or put them in a gitignored `.env.secrets` and sync separately **with `--build-time=false`** (keep them out of the build layer) |
 
 Red lines:
 - **Secrets never go into Git**. If `.env.production` contains secrets, add it to `.gitignore`; only commit non-sensitive config.

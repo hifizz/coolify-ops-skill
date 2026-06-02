@@ -13,3 +13,6 @@
 .vscode/
 .idea/
 *.swp
+
+# Generated CLI reference (per-version, produced by scripts/gen-reference.sh)
+references/_generated/

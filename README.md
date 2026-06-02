@@ -8,7 +8,7 @@
 
 > A **Claude Code / Codex agent skill** — drive the official [`coolify` CLI](https://github.com/coollabsio/coolify-cli) with natural language to remotely deploy, operate, and troubleshoot apps / services / databases on a self-hosted [Coolify](https://coolify.io) instance.
 
-**It runs entirely on top of the official CLI.** This skill never touches your server directly — it translates your natural-language intent into [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) commands, and the CLI talks to Coolify's REST API over a Bearer token (nothing to do with SSH). Because the CLI keeps evolving, the skill has the agent run `coolify <cmd> --help` to check flags rather than hard-coding them, avoiding version drift.
+**It runs entirely on top of the official CLI.** This skill never touches your server directly — it translates your natural-language intent into [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) commands, and the CLI talks to Coolify's REST API over a Bearer token (not your server's SSH login). Because the CLI keeps evolving, the skill has the agent run `coolify <cmd> --help` to check flags rather than hard-coding them, avoiding version drift.
 
 Once installed, just talk to the agent in plain language, e.g.:
 
@@ -21,7 +21,7 @@ The agent enables this skill automatically: look up the UUID → trigger the dep
 ## Requirements
 
 - A self-hosted **Coolify** instance (typically one VPS running a few Node / Next.js / Docker services).
-- A Coolify **API token** (generate it in the Web UI under `/security/api-tokens`).
+- A Coolify **API token** (generate it in the Web UI under `/security/api-tokens`). **Scope it least-privilege**: `read` + `deploy` for day-to-day ops, add `write` only to change config / create resources, and **never** hand an agent a `root` token. Details in [`references/safety-rules.md`](references/safety-rules.md).
 - The official **coolify CLI** ([coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli), the Go build — install it with the script below).
 - **Claude Code**, or any other agent that supports `SKILL.md` (e.g. Codex).
 
@@ -119,7 +119,7 @@ Once configured, you don't need to memorize commands — describe what you want 
 
 - **Destructive actions are confirmed.** Deleting a database/app, stopping production, force-deploying, and the like — the agent restates the impact and waits for your confirmation, and **never adds `-f` to skip confirmation on its own**. See [`references/safety-rules.md`](references/safety-rules.md).
 - **Don't expose databases to the public carelessly.** When a database needs external access, the order of preference is **internal > tunnel > hardened public**, and `--is-public` is off by default. To connect over a domain, turn off Cloudflare's orange cloud, and note that Coolify databases ship **without TLS** by default (a plaintext public connection leaks credentials). Full guide: [`references/database-access.md`](references/database-access.md).
-- **Credentials stay private.** The agent won't print tokens in its replies or write them to files; passwords / connection strings surfaced by `--show-sensitive` are redacted as needed.
+- **Credentials stay private.** The agent won't print tokens in its replies or copy them out of the CLI's own config store (`~/.config/coolify/config.json`, mode `0600`, where the CLI legitimately keeps them); passwords / connection strings surfaced by `--show-sensitive` are redacted as needed.
 - **Trust `--help` over the cheatsheet.** The CLI evolves; if a flag or JSON field ever looks off, confirm with `coolify <cmd> --help` before relying on it.
 
 ## Project layout
@@ -133,9 +133,11 @@ coolify-ops/
 │   ├── database-access.md      # Database external access: protocol basics + internal/tunnel/hardened public + domains
 │   └── safety-rules.md         # Destructive-operation red lines & confirmation checklist
 └── scripts/
+    ├── doctor.sh               # Preflight: CLI version / jq / connectivity / token abilities
     ├── install-cli.sh          # Cross-platform installer for the official CLI
     ├── health-check.sh         # One-shot health check (CLI / context / resource status)
-    └── deploy-and-watch.sh     # Deploy + follow logs until success / failure
+    ├── deploy-and-watch.sh     # Deploy + follow logs until success / failure
+    └── gen-reference.sh        # Dump this CLI version's full reference → references/_generated/
 ```
 
 ## License

@@ -8,7 +8,7 @@
 
 > 一个 **Claude Code / Codex Agent Skill**——用自然语言驱动官方 [`coolify` CLI](https://github.com/coollabsio/coolify-cli)，远程完成自托管 [Coolify](https://coolify.io) 实例上应用 / 服务 / 数据库的**部署、运维与排障**。
 
-**底层全靠官方 CLI 干活**：本 skill 自己不碰你的服务器，而是把你的自然语言意图翻译成 [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) 命令来执行；CLI 再通过 Bearer Token 调 Coolify 的 REST API 完成操作（与 SSH 无关）。CLI 在持续演进，skill 鼓励 Agent 用 `coolify <cmd> --help` 自查 flag，避免版本漂移。
+**底层全靠官方 CLI 干活**：本 skill 自己不碰你的服务器，而是把你的自然语言意图翻译成 [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) 命令来执行；CLI 再通过 Bearer Token 调 Coolify 的 REST API 完成操作（用的是 REST API,不是服务器的 SSH 登录）。CLI 在持续演进，skill 鼓励 Agent 用 `coolify <cmd> --help` 自查 flag，避免版本漂移。
 
 装好后，直接对 Agent 说人话即可，例如：
 
@@ -21,7 +21,7 @@ Agent 会自动启用本 skill：查 UUID → 触发部署 → 跟随日志 → 
 ## 环境要求
 
 - 一台自托管的 **Coolify** 实例（典型：一台 VPS + 已部署若干 Node / Next.js / Docker 服务）。
-- 一个 Coolify **API Token**（在 Web UI 的 `/security/api-tokens` 生成）。
+- 一个 Coolify **API Token**（在 Web UI 的 `/security/api-tokens` 生成）。**按最小权限授予**：日常运维用 `read` + `deploy`,改配置 / 创建资源才加 `write`,**绝不**给 Agent 用 `root` token。详见 [`references/safety-rules.md`](references/safety-rules.md)。
 - 官方 **coolify CLI**（[coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli)，Go 版本，可用下方脚本一键安装）。
 - **Claude Code**，或其它支持 `SKILL.md` 的 Agent（如 Codex）。
 
@@ -115,7 +115,7 @@ coolify context verify
 
 - **危险操作要确认**：删库 / 删应用 / 停生产 / 强制部署等，Agent 会先复述影响并等你确认，**绝不主动加 `-f` 跳过确认**。详见 [`references/safety-rules.md`](references/safety-rules.md)。
 - **数据库别随手怼公网**：让数据库被外部访问时，推荐度是 **内网 > 隧道 > 公网加固**，默认不开 `--is-public`。用域名连库要关掉 Cloudflare 橙云，且 Coolify 默认数据库**不开 TLS**（公网明文连接会暴露凭据）。完整说明见 [`references/database-access.md`](references/database-access.md)。
-- **凭据不外泄**：Agent 不在回复里明文打印 token、不写进文件；`--show-sensitive` 带出的密码 / 连接串按需脱敏。
+- **凭据不外泄**：Agent 不在回复里明文打印 token,也不把它从 CLI 自身的配置文件（`~/.config/coolify/config.json`,权限 `0600`,CLI 在此合法存储）里复制出来;`--show-sensitive` 带出的密码 / 连接串按需脱敏。
 - **flag 以 `--help` 为准**：CLI 在演进，若某个 flag 或 JSON 字段看起来不对，先 `coolify <cmd> --help` 核对再依赖。
 
 ## 项目结构
@@ -129,11 +129,13 @@ coolify-ops/
 │   ├── database-access.md      # 数据库对外访问：协议认知 + 内网/隧道/公网加固 + 域名连库
 │   └── safety-rules.md         # 危险操作红线与确认清单
 └── scripts/
+    ├── doctor.sh               # 装上先自检：CLI 版本 / jq / 连通 / token 权限
     ├── install-cli.sh          # 跨平台安装官方 CLI
     ├── health-check.sh         # 一键体检（CLI / context / 资源状态）
-    └── deploy-and-watch.sh     # 部署 + 自动跟日志直到 success / fail
+    ├── deploy-and-watch.sh     # 部署 + 自动跟日志直到 success / fail
+    └── gen-reference.sh        # 生成当前 CLI 版本的完整参考 → references/_generated/
 ```
 
 ## License
 
-[MIT](LICENSE) © 2025 hifizz
+[MIT](LICENSE) © 2026 hifizz

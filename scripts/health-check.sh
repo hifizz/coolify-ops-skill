@@ -17,7 +17,7 @@ if ! command -v coolify >/dev/null 2>&1; then
   echo "❌ coolify CLI not found. Run install-cli.sh first"
   exit 1
 fi
-echo "✅ $(coolify --version 2>/dev/null || echo coolify present)"
+echo "✅ $(coolify version 2>/dev/null || echo coolify present)"
 
 # 2. Is the context reachable
 echo ""
@@ -45,7 +45,7 @@ if command -v jq >/dev/null 2>&1; then
     echo "Total resources: $TOTAL"
     echo ""
     echo "⚠️  Resources not in running state:"
-    UNHEALTHY=$(echo "$RES" | jq -r '.[] | select(.status != null and (.status | test("running") | not)) | "  - \(.name): \(.status)"')
+    UNHEALTHY=$(echo "$RES" | jq -r '.[] | select(.status != null and (.status | startswith("running") | not)) | "  - \(.name): \(.status)"')
     if [ -z "$UNHEALTHY" ]; then
       echo "  (none, all healthy ✅)"
     else
