@@ -5,9 +5,9 @@
 #   Omit context-name to use the default context
 set -uo pipefail
 
-CTX_ARGS=()
+CTX_FLAG=""
 if [ "${1:-}" != "" ]; then
-  CTX_ARGS=(--context="$1")
+  CTX_FLAG="--context=$1"
   echo "🔍 Using context: $1"
 fi
 
@@ -22,7 +22,7 @@ echo "✅ $(coolify version 2>/dev/null || echo coolify present)"
 # 2. Is the context reachable
 echo ""
 echo "── 2/4 Verifying connection ──"
-if ! coolify "${CTX_ARGS[@]}" context verify 2>&1; then
+if ! coolify $CTX_FLAG context verify 2>&1; then
   echo "❌ Context verification failed. Troubleshooting:"
   echo "   - Is the URL correct and reachable (curl -I <url>)"
   echo "   - Is the token valid (Web UI /security/api-tokens)"
@@ -33,19 +33,19 @@ fi
 # 3. Backend version
 echo ""
 echo "── 3/4 Coolify backend version ──"
-coolify "${CTX_ARGS[@]}" context version 2>/dev/null || echo "(version query skipped)"
+coolify $CTX_FLAG context version 2>/dev/null || echo "(version query skipped)"
 
 # 4. Resource status overview
 echo ""
 echo "── 4/4 Resource status ──"
 if command -v jq >/dev/null 2>&1; then
-  RES="$(coolify "${CTX_ARGS[@]}" resources list --format=json 2>/dev/null)"
+  RES="$(coolify $CTX_FLAG resources list --format=json 2>/dev/null)"
   if [ -n "$RES" ] && echo "$RES" | jq empty 2>/dev/null; then
     TOTAL=$(echo "$RES" | jq 'length')
     echo "Total resources: $TOTAL"
     echo ""
     echo "⚠️  Resources not in running state:"
-    UNHEALTHY=$(echo "$RES" | jq -r '.[] | select(.status != null and .status != "running") | "  - \(.name): \(.status)"')
+    UNHEALTHY=$(echo "$RES" | jq -r '.[] | select(.status != null and (.status | startswith("running") | not)) | "  - \(.name): \(.status)"')
     if [ -z "$UNHEALTHY" ]; then
       echo "  (none, all healthy ✅)"
     else
@@ -53,11 +53,11 @@ if command -v jq >/dev/null 2>&1; then
     fi
   else
     echo "(response is not valid JSON, falling back to table output)"
-    coolify "${CTX_ARGS[@]}" resources list
+    coolify $CTX_FLAG resources list
   fi
 else
   echo "(jq not installed, printing table output directly)"
-  coolify "${CTX_ARGS[@]}" resources list
+  coolify $CTX_FLAG resources list
 fi
 
 echo ""

@@ -6,7 +6,7 @@
 #   bash deploy-and-watch.sh <app-name> --context staging
 set -uo pipefail
 
-CTX_ARGS=()
+CTX_FLAG=""
 BY_UUID=0
 TARGET=""
 
@@ -14,7 +14,7 @@ TARGET=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --uuid) BY_UUID=1; TARGET="$2"; shift 2 ;;
-    --context) CTX_ARGS=(--context="$2"); shift 2 ;;
+    --context) CTX_FLAG="--context=$2"; shift 2 ;;
     *) TARGET="$1"; shift ;;
   esac
 done
@@ -32,7 +32,7 @@ APP_UUID=""
 if [ "$BY_UUID" -eq 1 ]; then
   APP_UUID="$TARGET"
 elif command -v jq >/dev/null 2>&1; then
-  APP_UUID="$(coolify "${CTX_ARGS[@]}" app list --format=json 2>/dev/null \
+  APP_UUID="$(coolify $CTX_FLAG app list --format=json 2>/dev/null \
     | jq -r --arg n "$TARGET" '.[] | select(.name==$n) | .uuid' | head -n1)"
   if [ -z "$APP_UUID" ] || [ "$APP_UUID" = "null" ]; then
     echo "⚠️  Could not resolve a uuid from name '$TARGET' (the name may not match any app)."
@@ -47,14 +47,14 @@ fi
 # Trigger the deployment
 echo "🚀 Triggering deployment: $TARGET"
 if [ "$BY_UUID" -eq 1 ]; then
-  coolify "${CTX_ARGS[@]}" deploy uuid "$TARGET" || { echo "❌ Failed to trigger deployment"; exit 1; }
+  coolify $CTX_FLAG deploy uuid "$TARGET" || { echo "❌ Failed to trigger deployment"; exit 1; }
 else
-  coolify "${CTX_ARGS[@]}" deploy name "$TARGET" || { echo "❌ Failed to trigger deployment"; exit 1; }
+  coolify $CTX_FLAG deploy name "$TARGET" || { echo "❌ Failed to trigger deployment"; exit 1; }
 fi
 
 if [ -z "$APP_UUID" ]; then
   echo "ℹ️  No uuid, cannot follow automatically. Check manually:"
-  echo "   coolify deploy list"
+  echo "   coolify $CTX_FLAG deploy list"
   exit 0
 fi
 
@@ -62,7 +62,7 @@ fi
 echo ""
 echo "📜 Following deployment logs (Ctrl-C stops following; the deployment keeps running in the background)..."
 echo "────────────────────────────────────────"
-coolify "${CTX_ARGS[@]}" app deployments logs "$APP_UUID" -f
+coolify $CTX_FLAG app deployments logs "$APP_UUID" -f
 
 # After following ends, report the final status.
 # Use `app deployments list <app-uuid>` — it is already scoped to this app, so we
@@ -72,10 +72,10 @@ coolify "${CTX_ARGS[@]}" app deployments logs "$APP_UUID" -f
 echo "────────────────────────────────────────"
 echo "🔎 Latest deployment status:"
 if command -v jq >/dev/null 2>&1; then
-  coolify "${CTX_ARGS[@]}" app deployments list "$APP_UUID" --format=json 2>/dev/null \
+  coolify $CTX_FLAG app deployments list "$APP_UUID" --format=json 2>/dev/null \
     | jq -r 'sort_by(.created_at) | last
              | "  Status: \(.status // "unknown")  Deployment ID: \(.deployment_uuid // .uuid // "?")"' \
-    2>/dev/null || coolify "${CTX_ARGS[@]}" app deployments list "$APP_UUID"
+    2>/dev/null || coolify $CTX_FLAG app deployments list "$APP_UUID"
 else
-  coolify "${CTX_ARGS[@]}" app deployments list "$APP_UUID"
+  coolify $CTX_FLAG app deployments list "$APP_UUID"
 fi
