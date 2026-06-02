@@ -12,6 +12,10 @@
 - [Database](#database)
 - [Service](#service)
 - [Server](#server)
+- [GitHub App integrations](#github-app-integrations)
+- [Private keys](#private-keys)
+- [Storage (persistent volumes)](#storage-persistent-volumes)
+- [Teams](#teams)
 - [Output formats & global flags](#output-formats--global-flags)
 - [Troubleshooting table](#troubleshooting-table)
 
@@ -48,6 +52,7 @@ coolify app get <uuid>                     # details
 coolify app start|stop|restart <uuid>      # lifecycle
 coolify app delete <uuid>                  # delete (dangerous, requires confirmation; do not proactively add -f)
 coolify app logs <uuid>                     # runtime logs (container stdout)
+coolify app previews delete <uuid> <pr-id>  # clean up a PR preview deployment
 
 # Create a new app from a git repo / Dockerfile / image (pick the source subcommand)
 coolify app create public      --server-uuid <s> --project-uuid <p> --environment-name <env> \
@@ -102,7 +107,7 @@ coolify deploy cancel <deployment-uuid>   # cancel an in-progress deployment
 
 ## Env
 
-> The env subcommands for app and service are identical; the example below uses app.
+> The env subcommands are identical across **app, service, and database** (e.g. `coolify database env list <db-uuid>`, `coolify database env sync <db-uuid> --file .env`); the examples below use app.
 
 ```bash
 coolify app env list <app-uuid>
@@ -148,6 +153,11 @@ coolify database backup create <db-uuid> \
   [--retention-days-locally 7] [--retention-amount-locally 5]
 coolify database backup trigger <db-uuid> <backup-uuid>       # back up immediately
 coolify database backup executions <db-uuid> <backup-uuid>    # backup execution records
+
+# databases also have env and storage subcommands (same shape as app):
+coolify database env list <db-uuid>
+coolify database env sync <db-uuid> --file .env               # see Env section for flag caveats
+coolify database storage list <db-uuid>                       # see Storage section
 ```
 
 > Backup flags verified against coolify-cli v1.6.2. Local retention uses the **`-locally`** suffix (`--retention-days-locally` / `--retention-amount-locally`) — there is **no** `--retention-*-local`. S3 has the matching `--retention-days-s3` / `--retention-amount-s3`, plus `--retention-max-storage-locally` / `--retention-max-storage-s3`, `--databases-to-backup`, `--disable-local-backup`, `--dump-all`, and `--timeout`.
@@ -174,6 +184,61 @@ coolify server get <uuid>                # details
 coolify server get <uuid> --resources    # including the resources on that server and their status
 coolify server validate <uuid>           # validate connection
 coolify server domains <uuid>            # domains on that server
+coolify server add <name> <ip> <private-key-uuid> [-p 22] [-u root] [--validate]   # register a new server
+coolify server remove <uuid>             # remove a server (dangerous, requires confirmation)
+```
+
+## GitHub App integrations
+
+For deploying **private** GitHub repos; `app create github` needs the resulting App UUID (`--github-app-uuid`). Aliases: `gh`, `github-app`, `github-apps`.
+
+```bash
+coolify github list                                  # list GitHub App integrations
+coolify github get <app-uuid>                         # details
+coolify github repos <app-uuid>                       # repos the App can access
+coolify github branches <app-uuid> <owner/repo>       # branches of a repo
+coolify github create --name <n> --api-url https://api.github.com --html-url https://github.com \
+  --app-id <id> --installation-id <id> --client-id <id> --client-secret <secret> \
+  --private-key-uuid <uuid>                            # register a GitHub App (all listed flags required)
+coolify github update <app-uuid> ...                  # update integration
+coolify github delete <app-uuid>                      # delete integration (dangerous)
+```
+
+## Private keys
+
+SSH private keys for server auth and `app create deploy-key` private-repo deploys. Aliases: `private-keys`, `key`, `keys`.
+
+```bash
+coolify private-key list                                   # list keys
+coolify private-key add <key-name> <private-key-or-file>   # add a key (inline value or a file path)
+coolify private-key remove <uuid>                          # remove a key (dangerous)
+```
+
+## Storage (persistent volumes)
+
+Persistent volumes / file mounts for stateful resources — same shape for `app` / `database` / `service` (alias: `storages`).
+
+```bash
+coolify app storage list <app-uuid>
+coolify app storage create <app-uuid> --type persistent --name <vol> --mount-path /data
+coolify app storage create <app-uuid> --type file --mount-path /etc/app/config.yml --content "$(cat config.yml)"
+coolify app storage update <app-uuid> <storage-uuid> ...
+coolify app storage delete <app-uuid> <storage-uuid>       # dangerous: may delete persisted data
+
+# database / service are identical — just swap the noun:
+coolify database storage list <db-uuid>
+coolify service storage list <service-uuid>
+```
+
+## Teams
+
+Tokens are **team-scoped** (see `references/safety-rules.md`); these show which team you're acting as. Alias: `team`.
+
+```bash
+coolify teams list             # all teams visible to the token
+coolify teams current          # the currently authenticated team
+coolify teams get <id>         # team details
+coolify teams members list     # members of the current team
 ```
 
 ## Output formats & global flags
