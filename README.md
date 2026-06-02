@@ -1,77 +1,108 @@
 # coolify-ops
 
-> **兼容性**：Tested against coolify-cli vX.X.X / Coolify vX.X.X（请填入你实测的版本）。CLI 在持续演进，flag 以 `coolify <cmd> --help` 的实际输出为准。
+**English** | [简体中文](README.zh-CN.md)
 
-一个让 Claude Code / Codex 通过官方 `coolify` CLI 远程操控自托管 Coolify 实例的 Agent Skill。
+> A **Claude Code / Codex agent skill** — drive the official [`coolify` CLI](https://github.com/coollabsio/coolify-cli) with natural language to remotely deploy, operate, and troubleshoot apps / services / databases on a self-hosted [Coolify](https://coolify.io) instance.
 
-针对场景：本地 macOS + 远端 VPS（已装 Coolify），部署/运维 Node、Next.js、Docker 类服务。
+**It runs entirely on top of the official CLI.** This skill never touches your server directly — it translates your natural-language intent into [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) commands, and the CLI talks to Coolify's REST API over a Bearer token (nothing to do with SSH). Because the CLI keeps evolving, the skill has the agent run `coolify <cmd> --help` to check flags rather than hard-coding them, avoiding version drift.
 
-## 能力边界（能做 / 不能做）
+Once installed, just talk to the agent in plain language, e.g.:
 
-| ✅ 能做 | ❌ 不能做（需 Web UI） |
-|---|---|
-| 已有应用/服务的部署、重新部署 | **从零创建应用**（绑 Git 仓库、设构建命令）—— CLI 未完整支持 |
-| 运维与排障（看运行时/部署日志、查状态） | **一键服务的创建**（模板服务）—— 需在 Web UI 选模板 |
-| 环境变量同步（`env sync` 批量增改） | |
-| 数据库创建与备份 | |
-| 生命周期管理（start / stop / restart） | |
-| 数据库对外访问决策（内网/隧道/公网加固，见 `references/database-access.md`） | |
+- "Redeploy my-app and tell me the result when it's done"
+- "The worker service looks down — pull the logs and check"
+- "Sync .env.production to my-app, then redeploy"
 
-惯例：在 Web UI 把"骨架"建好（新 app / 一键服务），CLI 接管后续的配置、部署与运维。
+The agent enables this skill automatically: look up the UUID → trigger the deploy → follow the logs → report back, **always confirming with you before any destructive action**.
 
-## 安装
+## Requirements
 
-放到 Claude Code 的 skills 目录即可自动加载：
+- A self-hosted **Coolify** instance (typically one VPS running a few Node / Next.js / Docker services).
+- A Coolify **API token** (generate it in the Web UI under `/security/api-tokens`).
+- The official **coolify CLI** ([coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli), the Go build — install it with the script below).
+- **Claude Code**, or any other agent that supports `SKILL.md` (e.g. Codex).
+
+> Compatibility: Tested against coolify-cli vX.X.X / Coolify vX.X.X (fill in the versions you actually verified).
+
+## Install
+
+Drop this directory into your agent's skills folder and it loads automatically:
 
 ```bash
-# 全局（对所有项目生效）
+# Claude Code · global (applies to all projects)
 cp -r coolify-ops ~/.claude/skills/
 
-# 或项目级（只对当前项目）
+# Claude Code · per-project (current project only)
 cp -r coolify-ops .claude/skills/
 ```
 
-Codex 等其他支持 SKILL.md 的 Agent，放到对应的 skills 目录。
+For Codex and other agents, place it in their respective skills directory.
 
-## 首次使用
+## First-time setup
 
-第一次让 Agent 操作前，确保 CLI 装好、context 配好：
+Before letting the agent operate anything, install the CLI and configure a connection (context):
 
 ```bash
+# 1) Install the official coolify CLI (auto-detects macOS / Linux; skips if already present)
 bash ~/.claude/skills/coolify-ops/scripts/install-cli.sh
+
+# 2) Add a context and set it as default (generate the token in the Coolify Web UI: /security/api-tokens)
 coolify context add my-vps https://coolify.your-domain.com <token> -d
+
+# 3) Verify connectivity and auth
 coolify context verify
 ```
 
-token 在 Coolify Web UI 的 `/security/api-tokens` 生成。
+## Usage
 
-之后直接对 Agent 说自然语言即可，例如：
-- "把 my-app 重新部署一下，部署完跟我说结果"
-- "线上那个 worker 服务好像挂了，帮我查一下"
-- "把 .env.production 同步到 my-app 然后重新部署"
+Once configured, you don't need to memorize commands — describe what you want in natural language and the agent enables this skill and runs it. Common cases:
 
-## 结构
+- **Deploy / redeploy**: "Redeploy my-app", "Ship this change"
+- **Troubleshooting**: "xxx service is throwing 502, take a look", "Why did the last deploy fail?"
+- **Environment variables**: "Sync .env.production to my-app", "Add a `NEXT_PUBLIC_API_URL` to it"
+- **Lifecycle**: "Restart that database", "Stop the worker for now"
+- **Databases & backups**: "Set up a daily 2am backup for my-db", "Let me connect to this database from my laptop"
+- **Domains / resources**: "Bind a domain to it", "Bump memory to 1G"
+
+## Capabilities (can / can't)
+
+| ✅ Can do | ❌ Can't do (use the Web UI) |
+|---|---|
+| Deploy / redeploy existing apps & services | **Create an app from scratch** (bind a Git repo, set build commands) — not fully supported by the CLI |
+| Operate & troubleshoot (runtime / deploy logs, status) | **Create one-click services** (template services) — pick the template in the Web UI |
+| Sync environment variables (`env sync`, batch upsert) | |
+| Create & back up databases | |
+| Lifecycle management (start / stop / restart) | |
+| Decide how a database is exposed (internal / tunnel / hardened public) | |
+
+> Convention: build the "skeleton" in the Web UI (a new app / one-click service), then let the CLI take over configuration, deployment, and operations.
+
+## Things to watch out for
+
+- **Destructive actions are confirmed.** Deleting a database/app, stopping production, force-deploying, and the like — the agent restates the impact and waits for your confirmation, and **never adds `-f` to skip confirmation on its own**. See [`references/safety-rules.md`](references/safety-rules.md).
+- **Don't expose databases to the public carelessly.** When a database needs external access, the order of preference is **internal > tunnel > hardened public**, and `--is-public` is off by default. To connect over a domain, turn off Cloudflare's orange cloud, and note that Coolify databases ship **without TLS** by default (a plaintext public connection leaks credentials). Full guide: [`references/database-access.md`](references/database-access.md).
+- **Credentials stay private.** The agent won't print tokens in its replies or write them to files; passwords / connection strings surfaced by `--show-sensitive` are redacted as needed.
+- **Trust `--help` over the cheatsheet.** The CLI evolves; a few flags marked ⚠️ in the cheatsheet are unverified — confirm them with `coolify <cmd> --help` before relying on them.
+
+## Project layout
 
 ```
 coolify-ops/
-├── SKILL.md                    # 主入口：原则 + 操作决策树 + 能力边界
+├── SKILL.md                    # Entry point: principles + decision tree + capability boundaries
 ├── references/
-│   ├── cli-cheatsheet.md       # 全量命令速查 + jq 配方 + 排障表
-│   ├── deploy-patterns.md      # Node/Next/Docker/静态站部署模板 + env 分层 + magic vars
-│   ├── database-access.md      # 数据库对外访问：协议认知 + 内网/隧道/公网加固 + 域名连库
-│   └── safety-rules.md         # 危险操作红线与确认清单
+│   ├── cli-cheatsheet.md       # Full command reference + jq recipes + troubleshooting table
+│   ├── deploy-patterns.md      # Node/Next/Docker/static deploy templates + env layering + magic vars
+│   ├── database-access.md      # Database external access: protocol basics + internal/tunnel/hardened public + domains
+│   └── safety-rules.md         # Destructive-operation red lines & confirmation checklist
 └── scripts/
-    ├── install-cli.sh          # 跨平台安装 CLI
-    ├── health-check.sh         # 一键体检
-    └── deploy-and-watch.sh     # 部署 + 自动跟日志直到 success/fail
+    ├── install-cli.sh          # Cross-platform installer for the official CLI
+    ├── health-check.sh         # One-shot health check (CLI / context / resource status)
+    └── deploy-and-watch.sh     # Deploy + follow logs until success / failure
 ```
 
-## 设计取舍
+## License
 
-- **不硬编码易变的 flag**：CLI 在演进，skill 鼓励 Agent 用 `coolify <cmd> --help` 自查，避免版本漂移。
-- **安全优先**：所有 delete/stop/强制操作都要求 Agent 先确认，绝不主动 `-f`。
-- **部署闭环**：部署不止"触发"，而是触发→跟日志→报结果的完整链路。
+[MIT](LICENSE) © 2025 hifizz
 
-## 维护
+---
 
-CLI 出新版后，主要可能需要更新 `references/cli-cheatsheet.md` 里的命令；SKILL.md 的原则和决策树通常无需改动。
+> Documentation is available in [English](README.md) and [简体中文](README.zh-CN.md).
