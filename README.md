@@ -8,7 +8,7 @@
 
 > A **Claude Code / Codex agent skill** — drive the official [`coolify` CLI](https://github.com/coollabsio/coolify-cli) with natural language to remotely deploy, operate, and troubleshoot apps / services / databases on a self-hosted [Coolify](https://coolify.io) instance.
 
-**It runs entirely on top of the official CLI.** This skill never touches your server directly — it translates your natural-language intent into [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) commands, and the CLI talks to Coolify's REST API over a Bearer token (nothing to do with SSH). Because the CLI keeps evolving, the skill has the agent run `coolify <cmd> --help` to check flags rather than hard-coding them, avoiding version drift.
+**It runs entirely on top of the official CLI.** This skill never touches your server directly — it translates your natural-language intent into [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) commands, and the CLI talks to Coolify's REST API over a Bearer token (not your server's SSH login). Because the CLI keeps evolving, the skill has the agent run `coolify <cmd> --help` to check flags rather than hard-coding them, avoiding version drift.
 
 Once installed, just talk to the agent in plain language, e.g.:
 

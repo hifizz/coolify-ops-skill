@@ -8,7 +8,7 @@
 
 > 一个 **Claude Code / Codex Agent Skill**——用自然语言驱动官方 [`coolify` CLI](https://github.com/coollabsio/coolify-cli)，远程完成自托管 [Coolify](https://coolify.io) 实例上应用 / 服务 / 数据库的**部署、运维与排障**。
 
-**底层全靠官方 CLI 干活**：本 skill 自己不碰你的服务器，而是把你的自然语言意图翻译成 [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) 命令来执行；CLI 再通过 Bearer Token 调 Coolify 的 REST API 完成操作（与 SSH 无关）。CLI 在持续演进，skill 鼓励 Agent 用 `coolify <cmd> --help` 自查 flag，避免版本漂移。
+**底层全靠官方 CLI 干活**：本 skill 自己不碰你的服务器，而是把你的自然语言意图翻译成 [coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli) 命令来执行；CLI 再通过 Bearer Token 调 Coolify 的 REST API 完成操作（用的是 REST API,不是服务器的 SSH 登录）。CLI 在持续演进，skill 鼓励 Agent 用 `coolify <cmd> --help` 自查 flag，避免版本漂移。
 
 装好后，直接对 Agent 说人话即可，例如：
 
