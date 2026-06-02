@@ -135,7 +135,8 @@ coolify-ops/
 └── scripts/
     ├── install-cli.sh          # Cross-platform installer for the official CLI
     ├── health-check.sh         # One-shot health check (CLI / context / resource status)
-    └── deploy-and-watch.sh     # Deploy + follow logs until success / failure
+    ├── deploy-and-watch.sh     # Deploy + follow logs until success / failure
+    └── gen-reference.sh        # Dump this CLI version's full reference → references/_generated/
 ```
 
 ## License

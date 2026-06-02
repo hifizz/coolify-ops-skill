@@ -131,7 +131,8 @@ coolify-ops/
 └── scripts/
     ├── install-cli.sh          # 跨平台安装官方 CLI
     ├── health-check.sh         # 一键体检（CLI / context / 资源状态）
-    └── deploy-and-watch.sh     # 部署 + 自动跟日志直到 success / fail
+    ├── deploy-and-watch.sh     # 部署 + 自动跟日志直到 success / fail
+    └── gen-reference.sh        # 生成当前 CLI 版本的完整参考 → references/_generated/
 ```
 
 ## License

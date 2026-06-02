@@ -1,6 +1,6 @@
 # Coolify CLI Command Quick Reference
 
-> This is a command reference for the `coolify` CLI (coollabsio/coolify-cli, the Go version). The CLI is continuously evolving, so **flags should be taken from the actual output of `coolify <cmd> --help`**. This table is a quick reference for commonly used items.
+> This is a command reference for the `coolify` CLI (coollabsio/coolify-cli, the Go version). The CLI is continuously evolving, so **flags should be taken from the actual output of `coolify <cmd> --help`** — or, for a version-exact dump, from `references/_generated/` (run `bash scripts/gen-reference.sh`, which calls `coolify docs markdown` / `coolify docs llms`). **That generated reference is authoritative; this table is only a high-frequency quick reference** for commonly used items, jq recipes, and troubleshooting.
 
 ## Table of Contents
 
