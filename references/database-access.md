@@ -5,10 +5,11 @@
 
 ## 决策速查
 
-| 应用（连库方）在哪 | 推荐方案 | 要不要公网暴露端口 |
+| 应用（连库方）在哪 | 推荐方案 | 要不要公网暴露数据库端口 |
 |---|---|---|
 | 与数据库同一台 Coolify | **内网直连**（§2.1） | ❌ 不需要 |
-| Vercel / 本地 / 另一台机器 | **隧道**（Cloudflare Tunnel / Tailscale，§2.2） | ❌ 不需要 |
+| 本地 / 另一台 VPS / 任何能常驻进程的环境 | **隧道**（Cloudflare Tunnel / Tailscale，§2.2） | ❌ 不需要 |
+| **Vercel / 其它 serverless·edge** | **裸 TCP 隧道走不通**；改走 HTTP 层或托管连接（§2.2「Vercel 特例」/ §5） | ❌ 不直接暴露裸库 |
 | 确需公网直连、且无法用隧道 | **公网 + 加固**（§2.3） | ⚠️ 是，但必须加固 |
 | 想用浏览器/REST API 管理 | 部署 pgweb/Adminer/PostgREST（§5） | 走 HTTP，正常绑域名 |
 
@@ -50,16 +51,28 @@
 
 > 默认就该走这条。只有当连库方确实不在这台机器上时，才往下看。
 
-### 2.2 隧道（应用在外部时推荐）
+### 2.2 隧道（连库方能常驻一个隧道客户端时推荐）
 
-**适用：应用跑在 Vercel / 本地开发机 / 另一台 VPS，需要连这台机器上的库。**
+**适用：应用跑在本地开发机 / 另一台 VPS / 任何能常驻一个后台进程的环境，需要连这台机器上的库。**
+（**Vercel 等 serverless/edge 不适用**——它们跑不了常驻 sidecar，见本节末「⚠️ Vercel / serverless 特例」。）
 
-不要为此开 `--is-public` 把端口怼到公网。改用加密隧道，让连库方"像在内网一样"访问：
+不要为此开 `--is-public` 把端口怼到公网。改用加密隧道，让连库方"像在内网一样"访问。**注意：数据库是裸 TCP，下面两种方案都要求连库方那侧常驻一个隧道客户端进程**：
 
-- **Cloudflare Tunnel**：在 VPS 上跑 `cloudflared`，把数据库端口通过 Cloudflare 边缘暴露给指定的客户端；公网扫描器看不到你 VPS 上的开放端口。
-- **Tailscale / WireGuard**：把 VPS 和连库方加进同一个私有网络（tailnet），用 Tailscale 内网 IP（`100.x.x.x`）连库。零公网暴露，端对端加密。
+- **Cloudflare Tunnel**：库这侧的 VPS 上跑 `cloudflared`；连库方那侧再跑 `cloudflared access tcp --hostname db.example.com --url localhost:5432`，在本地起一个端口转发进隧道，应用连 `localhost:5432`。
+  - ⚠️ 裸 TCP（Postgres/MySQL 协议）**必须**靠客户端这个 `cloudflared access` 代理——Cloudflare 免费隧道**不会**给裸 TCP 一个"任意客户端无需 sidecar 即可直连"的公网端点（那是 Enterprise 的 **Spectrum** 才有的能力）。
+- **Tailscale / WireGuard**：把 VPS 和连库方加进同一个私有网络（tailnet），连库方装 `tailscaled`，用 Tailscale 内网 IP（`100.x.x.x`）连库。零公网暴露，端对端加密。
 
-优点：**公网端口扫描器看不到数据库端口**，流量加密，凭据不在公网明文裸奔。对 Vercel 这类无固定出口 IP 的平台，Cloudflare Tunnel 尤其合适。
+优点：**公网端口扫描器看不到数据库端口**，流量加密，凭据不在公网明文裸奔。
+
+#### ⚠️ Vercel / serverless·edge 特例（重要，别踩）
+
+上面两种隧道都要求连库方**常驻一个 sidecar 进程**（`cloudflared access` 或 `tailscaled`）。Vercel 的 serverless/edge 函数是**短生命周期、无状态、跑不了常驻 sidecar**，所以**这两条路对 Vercel 都走不通**——照做的结果是函数根本连不上库。Vercel 连自托管数据库的可行姿势是：
+
+1. **在库前面挂一个会说 HTTP 的层**，让 Vercel 走 HTTPS 而不是裸 TCP——这是首选。例如 **PostgREST**（REST），或连接池/数据代理类（PgBouncer/Supabase 之类带 HTTP 入口、Prisma Accelerate、Neon/PlanetScale 这种 serverless HTTP driver）。详见 §5。
+2. **公网 TLS endpoint + 加固**（§2.3）。但 Vercel serverless **默认无固定出口 IP**，§2.3 的"防火墙限制来源 IP"基本使不上，除非用 Vercel 的静态出口 IP（Secure Compute，Enterprise）。
+3. **Cloudflare Spectrum**（Enterprise）给裸库一个真正的公网 TCP 端点，Vercel 无需 sidecar 直连——成本较高，按需评估。
+
+> 一句话：**Vercel ≠ "在外部的机器"**。能跑 sidecar 的外部机器走隧道；Vercel 这类 serverless 要么走 HTTP 层（§5），要么走带静态 IP 的公网加固，别套用裸 TCP 隧道。
 
 ### 2.3 公网 + 加固（可接受，但需谨慎）
 
@@ -122,13 +135,14 @@ postgresql://user:pass@db.example.com:5432/mydb
 
 ---
 
-## 5. 如果用户其实想要的是 HTTP 入口（浏览器管理 / REST API）
+## 5. 在数据库前面挂一个会说 HTTP 的层（HTTP 入口 / serverless 连库）
 
-如果用户真正的诉求是"在浏览器里看/改数据"或"通过 HTTP API 读写数据"，那不是上面的数据库连接问题，而是另一类需求——应该在数据库前面再部署一个**会说 HTTP 的服务**：
+两种情况都落到这里：(a) 用户真正想要的是"在浏览器里看/改数据""通过 HTTP API 读写"；(b) 连库方是 **Vercel 等 serverless/edge**（§2.2 特例），跑不了隧道 sidecar、也没有固定出口 IP，需要走 HTTPS 而非裸 TCP。解法都是在数据库前面再部署一个**会说 HTTP 的服务**：
 
 - **浏览器管理界面**：部署 **pgweb**（Postgres）或 **Adminer**（多数据库）这类 Web 管理工具。它们是 HTTP 服务，**在内网连数据库**，自己对外走 HTTPS。
 - **REST API**：部署 **PostgREST**（把 Postgres 表自动暴露成 REST API）。同样是 HTTP 服务，内网连库。
+- **serverless 连库（Vercel 等）**：用带 HTTP 入口的连接池/数据代理（PgBouncer/Supabase 之类、Prisma Accelerate、Neon/PlanetScale 这种 serverless HTTP driver），或自托管 PostgREST——让 Vercel 函数走一次 HTTPS 请求，而不是维持一条裸 TCP 长连接。
 
 这些服务才可以正常绑 Traefik 域名、走 HTTPS、开橙云——因为它们说的就是 HTTP。数据库本身仍只在内网，不对公网暴露 TCP 端口。
 
-> 在 Coolify 上，这类工具通常作为独立 app/service 部署，部署与运维流程见 `deploy-patterns.md` 与 SKILL.md 的常规路径；连库用 §2.1 的内部地址即可。
+> 在 Coolify 上，这类工具通常作为独立 app/service 部署，部署与运维流程见 `deploy-patterns.md` 与 SKILL.md 的常规路径；这层 HTTP 服务连库用 §2.1 的内部地址即可。

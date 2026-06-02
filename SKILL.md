@@ -106,7 +106,7 @@ coolify database backup trigger <db-uuid> <backup-uuid>   # 立即备份
 支持类型：postgresql / mysql / mariadb / mongodb / redis / keydb / clickhouse / dragonfly。
 **删库前**务必走安全规则里的检查清单。
 
-**对外访问分支**：当请求涉及"让数据库对外 / 被其他机器 / 被 Vercel 访问"，或"用域名连库""暴露数据库端口"时，**先读 `references/database-access.md`**，按其推荐顺序（**内网 > 隧道 > 公网加固**）与用户确认，**不要直接 `--is-public`**。要点：数据库说 TCP 协议、不走 HTTP（`https://db.example.com` 连不上）；连库方与库同机就走内网、在外部就用隧道；确需公网先走 `safety-rules.md` 的 `--is-public` 标准流程并提醒默认无 TLS。
+**对外访问分支**：当请求涉及"让数据库对外 / 被其他机器 / 被 Vercel 访问"，或"用域名连库""暴露数据库端口"时，**先读 `references/database-access.md`**，按其推荐顺序（**内网 > 隧道 > 公网加固**）与用户确认，**不要直接 `--is-public`**。要点：数据库说 TCP 协议、不走 HTTP（`https://db.example.com` 连不上）；连库方与库同机走内网、在能常驻进程的外部机器走隧道、**Vercel 等 serverless 走 HTTP 层（裸 TCP 隧道对它走不通）**；确需公网先走 `safety-rules.md` 的 `--is-public` 标准流程并提醒默认无 TLS。
 
 ## 已知能力边界
 
