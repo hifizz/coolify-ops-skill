@@ -1,55 +1,55 @@
-# Coolify CLI 命令速查
+# Coolify CLI Command Quick Reference
 
-> 这是 `coolify` CLI（coollabsio/coolify-cli，Go 版本）的命令参考。CLI 在持续演进，**flag 以 `coolify <cmd> --help` 的实际输出为准**，本表是常用项的快查。
+> This is a command reference for the `coolify` CLI (coollabsio/coolify-cli, the Go version). The CLI is continuously evolving, so **flags should be taken from the actual output of `coolify <cmd> --help`**. This table is a quick reference for commonly used items.
 
-## 目录
+## Table of Contents
 
-- [Context（连接管理）](#context)
-- [资源总览](#资源总览)
-- [应用 App](#应用-app)
-- [部署 Deploy](#部署-deploy)
-- [环境变量 Env](#环境变量-env)
-- [数据库 Database](#数据库-database)
-- [服务 Service](#服务-service)
-- [服务器 Server](#服务器-server)
-- [输出格式与全局 flag](#输出格式与全局-flag)
-- [排障表](#排障表)
+- [Context (connection management)](#context-connection-management)
+- [Resource overview](#resource-overview)
+- [App](#app)
+- [Deploy](#deploy)
+- [Env](#env)
+- [Database](#database)
+- [Service](#service)
+- [Server](#server)
+- [Output formats & global flags](#output-formats--global-flags)
+- [Troubleshooting table](#troubleshooting-table)
 
-## Context
+## Context (connection management)
 
 ```bash
-coolify context add <name> <url> <token> -d   # 添加并设为默认；-d 可省
-coolify context list                          # 列出所有
-coolify context get <name>                     # 详情
-coolify context use <name>                     # 切默认
-coolify context set-token <name> <new-token>   # 换 token
-coolify context update <name> --url <new-url>  # 改 URL
-coolify context delete <name>                  # 删除
-coolify context verify                          # 验证当前 context 连通性 + 鉴权
-coolify context version                         # 查 Coolify 后端版本
+coolify context add <name> <url> <token> -d   # add and set as default; -d can be omitted
+coolify context list                          # list all
+coolify context get <name>                     # details
+coolify context use <name>                     # switch default
+coolify context set-token <name> <new-token>   # change token
+coolify context update <name> --url <new-url>  # change URL
+coolify context delete <name>                  # delete
+coolify context verify                          # verify current context connectivity + auth
+coolify context version                         # check Coolify backend version
 ```
 
-多 context 临时切换（不改默认）：`coolify --context=<name> <command>`
+Temporarily switch between multiple contexts (without changing the default): `coolify --context=<name> <command>`
 
-## 资源总览
+## Resource overview
 
 ```bash
-coolify resources list          # 一次看到所有资源（app+db+service）及状态
-coolify projects list           # 项目列表
-coolify projects get <uuid>     # 项目下的 environments
-coolify server list             # 服务器列表
+coolify resources list          # see all resources (app+db+service) and their status at once
+coolify projects list           # list projects
+coolify projects get <uuid>     # environments under a project
+coolify server list             # list servers
 ```
 
-## 应用 App
+## App
 
 ```bash
-coolify app list                          # 列出所有 app
-coolify app get <uuid>                     # 详情
-coolify app start|stop|restart <uuid>      # 生命周期
-coolify app delete <uuid>                  # 删除（危险，需确认；勿主动加 -f）
-coolify app logs <uuid>                     # 运行时日志（容器 stdout）
+coolify app list                          # list all apps
+coolify app get <uuid>                     # details
+coolify app start|stop|restart <uuid>      # lifecycle
+coolify app delete <uuid>                  # delete (dangerous, requires confirmation; do not proactively add -f)
+coolify app logs <uuid>                     # runtime logs (container stdout)
 
-# 改配置（注意：是改已有 app，不是创建）
+# Change config (note: this edits an existing app, it does not create one)
 coolify app update <uuid> \
   --git-branch <branch> \
   --git-repository <url> \
@@ -64,35 +64,35 @@ coolify app update <uuid> \
   --health-check-enabled --health-check-path <path>
 ```
 
-### 部署日志（构建/启动阶段）
+### Deployment logs (build/startup phase)
 
 ```bash
-coolify app deployments list <app-uuid>                  # 历次部署
-coolify app deployments logs <app-uuid>                  # 最近一次部署的全部日志
-coolify app deployments logs <app-uuid> -f               # 实时跟随（tail -f 式）
-coolify app deployments logs <app-uuid> -n 100           # 最后 100 行
-coolify app deployments logs <app-uuid> <deployment-uuid> # 指定某次部署
+coolify app deployments list <app-uuid>                  # past deployments
+coolify app deployments logs <app-uuid>                  # all logs from the most recent deployment
+coolify app deployments logs <app-uuid> -f               # follow in real time (tail -f style)
+coolify app deployments logs <app-uuid> -n 100           # last 100 lines
+coolify app deployments logs <app-uuid> <deployment-uuid> # a specific deployment
 ```
 
-**运行时日志 vs 部署日志的区别**：`app logs` 看容器跑起来后的 stdout（排查运行崩溃）；`app deployments logs` 看构建→推送→启动过程（排查部署失败）。
+**Difference between runtime logs vs deployment logs**: `app logs` shows the container's stdout after it is up and running (for troubleshooting runtime crashes); `app deployments logs` shows the build → push → startup process (for troubleshooting deployment failures).
 
-## 部署 Deploy
+## Deploy
 
 ```bash
-coolify deploy name <app-name>           # 按名字部署（推荐，好记）
-coolify deploy uuid <uuid>               # 按 UUID 部署
-coolify deploy batch <a>,<b>,<c>         # 批量部署多个
-coolify deploy name <app-name> -f        # 强制部署（无变更也部署；慎用）
-coolify deploy list                       # 所有部署记录
-coolify deploy get <deployment-uuid>      # 单个部署详情
-coolify deploy cancel <deployment-uuid>   # 取消进行中的部署
+coolify deploy name <app-name>           # deploy by name (recommended, easy to remember)
+coolify deploy uuid <uuid>               # deploy by UUID
+coolify deploy batch <a>,<b>,<c>         # batch deploy multiple
+coolify deploy name <app-name> -f        # force deploy (deploy even with no changes; use with caution)
+coolify deploy list                       # all deployment records
+coolify deploy get <deployment-uuid>      # single deployment details
+coolify deploy cancel <deployment-uuid>   # cancel an in-progress deployment
 ```
 
-> ⚠️ **`deploy list --format=json` 的字段名未实测**：`deploy-and-watch.sh` 按 `application_uuid` / `resource_uuid` / `deployment_uuid` / `status` 过滤来定位最近一次部署，但这些字段名是基于通用约定推断的。首次使用请先跑 `coolify deploy list --format=json` 看真实结构，再决定按哪个字段过滤。
+> ⚠️ **The field names of `deploy list --format=json` are unverified**: `deploy-and-watch.sh` filters by `application_uuid` / `resource_uuid` / `deployment_uuid` / `status` to locate the most recent deployment, but these field names are inferred from common conventions. On first use, run `coolify deploy list --format=json` to inspect the real structure, then decide which field to filter on.
 
-## 环境变量 Env
+## Env
 
-> app 和 service 的 env 子命令完全一致，下面以 app 为例。
+> The env subcommands for app and service are identical; the example below uses app.
 
 ```bash
 coolify app env list <app-uuid>
@@ -101,15 +101,15 @@ coolify app env create <app-uuid> --key KEY --value VAL [--build-time] [--previe
 coolify app env update <app-uuid> <env-uuid> --value NEW
 coolify app env delete <app-uuid> <env-uuid>
 
-# 批量从 .env 同步（最常用）
+# Batch sync from .env (most common)
 coolify app env sync <app-uuid> --file .env
 coolify app env sync <app-uuid> --file .env.production --build-time
 ```
 
-**sync 行为**：更新已有 + 创建缺失，**不删除**文件中没有的变量。
-**flag 含义**：`--build-time` 构建期可用；`--preview` 预览部署可用；`--is-literal` 不做变量插值（值里有 `$` 时用）；`--is-multiline` 多行值。
+**sync behavior**: updates existing + creates missing, and **does not delete** variables not present in the file.
+**flag meanings**: `--build-time` available at build time; `--preview` available for preview deployments; `--is-literal` no variable interpolation (use when the value contains `$`); `--is-multiline` multi-line values.
 
-## 数据库 Database
+## Database
 
 ```bash
 coolify database list
@@ -123,75 +123,75 @@ coolify database create <type> \
 # type: postgresql|mysql|mariadb|mongodb|redis|keydb|clickhouse|dragonfly
 
 coolify database start|stop|restart <uuid>
-coolify database delete <uuid>   # 危险，需确认
+coolify database delete <uuid>   # dangerous, requires confirmation
 
-# 备份
+# backup
 coolify database backup list <db-uuid>
 coolify database backup create <db-uuid> \
   --frequency "0 2 * * *" --enabled \
-  [--save-s3 --s3-storage-uuid <uuid>] \           # ⚠️ 未实测，以 --help 为准
-  [--retention-days-local 7] [--retention-amount-local 5]   # --retention-amount-local ⚠️ 未实测，以 --help 为准
-coolify database backup trigger <db-uuid> <backup-uuid>       # 立即备份
-coolify database backup executions <db-uuid> <backup-uuid>    # 备份执行记录
+  [--save-s3 --s3-storage-uuid <uuid>] \           # ⚠️ unverified — confirm with --help
+  [--retention-days-local 7] [--retention-amount-local 5]   # --retention-amount-local ⚠️ unverified — confirm with --help
+coolify database backup trigger <db-uuid> <backup-uuid>       # back up immediately
+coolify database backup executions <db-uuid> <backup-uuid>    # backup execution records
 ```
 
-> ⚠️ **以下 backup flag 未在真实 CLI 上验证**，是基于通用约定推断的：`--save-s3`、`--s3-storage-uuid`、`--retention-amount-local`。使用前先 `coolify database backup create --help` 核对真实 flag 名与语义；`--retention-days-local` 同样以 --help 为准。
+> ⚠️ **The following backup flags have not been verified against the real CLI** and are inferred from common conventions: `--save-s3`, `--s3-storage-uuid`, `--retention-amount-local`. Before using them, run `coolify database backup create --help` to confirm the real flag names and semantics; `--retention-days-local` should likewise be confirmed with --help.
 
-cron 速记：`"0 2 * * *"` = 每天 02:00；`"0 */6 * * *"` = 每 6 小时。
+cron quick notes: `"0 2 * * *"` = every day at 02:00; `"0 */6 * * *"` = every 6 hours.
 
-## 服务 Service
+## Service
 
 ```bash
 coolify service list
 coolify service get <uuid>
 coolify service start|stop|restart <uuid>
-coolify service delete <uuid>            # 危险，需确认
+coolify service delete <uuid>            # dangerous, requires confirmation
 coolify service env sync <uuid> --file .env
 ```
 
-## 服务器 Server
+## Server
 
 ```bash
 coolify server list
-coolify server get <uuid>                # 详情
-coolify server get <uuid> --resources    # 含该服务器上的资源及状态
-coolify server validate <uuid>           # 验证连接
-coolify server domains <uuid>            # 该服务器的域名
+coolify server get <uuid>                # details
+coolify server get <uuid> --resources    # including the resources on that server and their status
+coolify server validate <uuid>           # validate connection
+coolify server domains <uuid>            # domains on that server
 ```
 
-## 输出格式与全局 flag
+## Output formats & global flags
 
 ```bash
---format=table      # 默认，给人看
---format=json       # 给脚本/Agent 解析，配 jq 用
---format=pretty     # 缩进 JSON，调试用
+--format=table      # default, for humans
+--format=json       # for scripts/Agents to parse, used with jq
+--format=pretty     # indented JSON, for debugging
 
---context=<name>    # 临时指定 context
---host <fqdn>       # 临时覆盖 URL
---token <token>     # 临时覆盖 token（CI 场景）
--s, --show-sensitive # 显示敏感信息（token/IP）
---debug             # 打印完整 HTTP 请求/响应（排障神器）
--f, --force         # 跳过确认（仅在用户明确同意后使用）
+--context=<name>    # temporarily specify a context
+--host <fqdn>       # temporarily override the URL
+--token <token>     # temporarily override the token (CI scenarios)
+-s, --show-sensitive # show sensitive info (token/IP)
+--debug             # print the full HTTP request/response (troubleshooting lifesaver)
+-f, --force         # skip confirmation (only use after the user has explicitly agreed)
 ```
 
-常用 jq 配方：
+Common jq recipes:
 
 ```bash
-# 按名字找 app 的 uuid
+# find an app's uuid by name
 coolify app list --format=json | jq -r '.[] | select(.name=="my-app") | .uuid'
 
-# 列出所有非 running 状态的资源
+# list all resources in a non-running state
 coolify resources list --format=json | jq -r '.[] | select(.status!="running") | "\(.name): \(.status)"'
 ```
 
-## 排障表
+## Troubleshooting table
 
-| 现象 | 可能原因 | 处理 |
+| Symptom | Possible cause | Action |
 |---|---|---|
-| `connection refused` / 超时 | URL 错；VPS 防火墙没放行；Coolify 没起来 | 先 `curl -I <url>` 测 Web 入口；检查 VPS 防火墙端口 |
-| `401 Unauthorized` | Token 错或被删 | Web UI 重新生成 token，`coolify context set-token` 更新 |
-| `403 Forbidden` | Token 权限不足 | 检查该 token 在 Coolify 里的权限范围 |
-| `certificate verify failed` | HTTPS 证书没配好 | **优先**在 Coolify 配好 TLS 再连。⚠️ 降级到 `http://` 会让 Bearer Token 明文上链路，仅限可信内网/临时排查，且事后应轮换 token |
-| 命令找不到资源 | UUID 过期/记错 | 重新 `<resource> list --format=json` 拿 UUID |
-| 不确定 flag | CLI 版本差异 | `coolify <cmd> --help` 看当前版本实际 flag |
-| 想看请求细节 | — | 任意命令前加 `--debug` |
+| `connection refused` / timeout | Wrong URL; VPS firewall not opened; Coolify not running | First test the web entry point with `curl -I <url>`; check the VPS firewall ports |
+| `401 Unauthorized` | Token wrong or deleted | Regenerate the token in the Web UI, update with `coolify context set-token` |
+| `403 Forbidden` | Insufficient token permissions | Check the permission scope of that token in Coolify |
+| `certificate verify failed` | HTTPS certificate not configured properly | **Preferably** configure TLS in Coolify before connecting. ⚠️ Downgrading to `http://` sends the Bearer Token in plaintext over the wire; only for trusted internal networks/temporary troubleshooting, and the token should be rotated afterward |
+| Command can't find a resource | UUID expired/misremembered | Run `<resource> list --format=json` again to get the UUID |
+| Unsure about a flag | CLI version differences | `coolify <cmd> --help` to see the actual flags for the current version |
+| Want to see request details | — | Prepend `--debug` to any command |

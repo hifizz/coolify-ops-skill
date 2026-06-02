@@ -1,70 +1,70 @@
-# 危险操作红线
+# Destructive-operation red lines
 
-本 skill 操作的是**生产环境的真实资源**。以下操作不可逆或会影响线上服务，**执行前必须向用户复述将要做的事并等待明确确认**。**绝不主动加 `-f`/`--force` 跳过确认。**
+This skill operates on **real resources in production environments**. The following operations are irreversible or affect live services. **Before executing, you must restate to the user what is about to happen and wait for explicit confirmation.** **Never proactively add `-f`/`--force` to skip confirmation.**
 
-## 分级
+## Severity tiers
 
-### 🔴 红线：不可逆，执行前必须确认 + 复述影响
+### 🔴 Red line: irreversible, must confirm + restate the impact before executing
 
-| 操作 | 后果 | 执行前必做 |
+| Operation | Consequence | Must do before executing |
 |---|---|---|
-| `coolify database delete <uuid>` | 删库，数据可能永久丢失 | 1. 确认有最新备份：`coolify database backup executions`；2. 复述库名给用户；3. 等明确"确认删除" |
-| `coolify app delete <uuid>` | 删应用及其配置 | 复述 app 名 + 确认；提醒关联数据/卷 |
-| `coolify service delete <uuid>` | 删服务 | 复述服务名 + 确认 |
-| `coolify context delete <name>` | 删本地连接配置 | 确认是否还要管理该实例 |
-| `coolify app env delete` | 删环境变量 | 确认该变量无在用引用 |
-| 任何带 `--delete-volumes` 的命令 | 删数据卷 | 这是数据销毁，最高级别确认 |
+| `coolify database delete <uuid>` | Deletes the database; data may be permanently lost | 1. Confirm there is a recent backup: `coolify database backup executions`; 2. Restate the database name to the user; 3. Wait for an explicit "confirm delete" |
+| `coolify app delete <uuid>` | Deletes the app and its configuration | Restate the app name + confirm; remind about associated data/volumes |
+| `coolify service delete <uuid>` | Deletes the service | Restate the service name + confirm |
+| `coolify context delete <name>` | Deletes the local connection config | Confirm whether you still need to manage that instance |
+| `coolify app env delete` | Deletes an environment variable | Confirm that the variable has no references in use |
+| Any command with `--delete-volumes` | Deletes data volumes | This is data destruction, the highest level of confirmation |
 
-### 🟡 注意：影响线上可用性，生产环境需确认
+### 🟡 Caution: affects live availability, requires confirmation in production
 
-| 操作 | 后果 |
+| Operation | Consequence |
 |---|---|
-| `coolify app stop` / `service stop` / `database stop`（生产） | 线上服务下线，用户可见 |
-| `coolify deploy ... -f`（强制部署） | 可能覆盖正常版本；先确认确实需要强制 |
-| `coolify app restart`（生产高峰） | 短暂中断；低峰期更安全 |
-| `coolify database backup delete` | 删除备份，降低可恢复性 |
-| `coolify database create/update ... --is-public`（公开数据库端口） | 把数据库 TCP 端口暴露到公网，全网扫描器可见；Coolify 默认数据库**不开 TLS**，明文凭据/数据有泄露风险。**绝不默认走这条**，先走下方标准流程 |
+| `coolify app stop` / `service stop` / `database stop` (production) | The live service goes offline, visible to users |
+| `coolify deploy ... -f` (force deploy) | May overwrite a working version; first confirm that forcing is genuinely needed |
+| `coolify app restart` (production peak hours) | Brief interruption; safer during off-peak hours |
+| `coolify database backup delete` | Deletes a backup, reducing recoverability |
+| `coolify database create/update ... --is-public` (public database port) | Exposes the database TCP port to the public internet, visible to internet-wide scanners; Coolify databases **do not enable TLS** by default, so plaintext credentials/data are at risk of leaking. **Never default to this**; first follow the standard procedure below |
 
-### 🟢 安全：只读或可逆，可直接执行
+### 🟢 Safe: read-only or reversible, can be executed directly
 
-- 所有 `list` / `get` / `logs` / `verify` / `version`
-- `coolify app env list` / `sync`（sync 只增改不删，反复执行安全）
-- `coolify deploy name <app>`（非强制，正常部署）
-- `coolify database backup trigger`（多备一次无害）
-- `coolify app start` / `restart`（恢复服务方向）
+- All `list` / `get` / `logs` / `verify` / `version`
+- `coolify app env list` / `sync` (sync only adds/updates and never deletes, safe to run repeatedly)
+- `coolify deploy name <app>` (non-forced, a normal deploy)
+- `coolify database backup trigger` (one extra backup does no harm)
+- `coolify app start` / `restart` (in the direction of restoring service)
 
-## 删库标准流程
+## Database-deletion standard procedure
 
-收到删除数据库请求时，**严格按此走**：
+When you receive a request to delete a database, **follow this strictly**:
 
-1. 先列备份，确认有近期可用备份：
+1. First list backups and confirm there is a recent usable backup:
    ```bash
-   coolify database list --format=json     # 确认目标库 uuid
+   coolify database list --format=json     # Confirm the target database's uuid
    coolify database backup list <db-uuid>
    coolify database backup executions <db-uuid> <backup-uuid>
    ```
-2. 如果没有近期备份，**先建议触发一次备份再删**：
+2. If there is no recent backup, **first suggest triggering a backup before deleting**:
    ```bash
    coolify database backup trigger <db-uuid> <backup-uuid>
    ```
-3. 向用户复述："即将删除数据库 `<名字>`（uuid 末四位 xxxx），最近备份时间 <T>。确认删除吗？"
-4. 仅在用户明确回复确认后执行删除。
+3. Restate to the user: "About to delete database `<name>` (last four of uuid: xxxx), most recent backup time <T>. Confirm deletion?"
+4. Only execute the deletion after the user has explicitly replied to confirm.
 
-## 公开数据库端口（`--is-public`）标准流程
+## Public database port (`--is-public`) standard procedure
 
-执行任何带 `--is-public` 的数据库**创建或修改**前，Agent **必须**按此走，**绝不默认 `--is-public`**：
+Before executing any database **creation or modification** that includes `--is-public`, the Agent **must** follow this, and **never default to `--is-public`**:
 
-1. **先确认连库方在哪。** 问清楚要连这个库的应用跑在哪台机器：
-   - 若与数据库**在同一台 Coolify** → **建议走内网直连，不暴露任何端口**（`references/database-access.md` §2.1）。这是默认建议。
-   - 若在 Vercel / 本地 / 他机 → **默认建议隧道方案**（Cloudflare Tunnel / Tailscale，§2.2），同样**不开** `--is-public`。
-2. **向用户复述风险**：公开端口 = 全网可扫描可探测；Coolify 默认数据库**不开 TLS**，公网明文连接会暴露账号密码与数据。
-3. **仅在用户明确坚持公开、且确认已知上述风险后**，才执行 `--is-public`，并同时落实加固清单（强密码、防火墙限制来源 IP 而非 `0.0.0.0/0`、给数据库配 TLS 让连接串能用 `sslmode=require`、考虑非标准端口降噪）——详见 `database-access.md` §2.3。
+1. **First confirm where the connecting client is.** Ask clearly which machine the app that will connect to this database runs on:
+   - If it is **on the same Coolify host** as the database → **recommend internal direct connection, exposing no port** (`references/database-access.md` §2.1). This is the default recommendation.
+   - If it is on Vercel / local / another machine → **default to recommending a tunnel approach** (Cloudflare Tunnel / Tailscale, §2.2), likewise **without** opening `--is-public`.
+2. **Restate the risks to the user**: a public port = scannable and probeable by the entire internet; Coolify databases **do not enable TLS** by default, so a plaintext public connection will expose the account password and data.
+3. **Only after the user explicitly insists on going public and confirms awareness of the above risks** should you execute `--is-public`, and at the same time implement the hardening checklist (strong password, restrict source IPs at the firewall rather than `0.0.0.0/0`, configure TLS for the database so the connection string can use `sslmode=require`, consider a non-standard port for noise reduction) — see `database-access.md` §2.3 for details.
 
-> 推荐度永远是：**内网 > 隧道 > 公网加固**。`--is-public` 是最后选项，且永不默认。完整方案对比见 `references/database-access.md`。
+> The order of recommendation is always: **internal > tunnel > public hardening**. `--is-public` is the last option, and is never the default. For a full comparison of approaches, see `references/database-access.md`.
 
-## 给 Agent 的元规则
+## Meta-rules for the Agent
 
-- **拿不准就问。** 任何无法确定是否影响生产的操作，停下来问用户，而不是替他决定。
-- **批量操作逐一确认。** `deploy batch` 或循环操作多个资源时，先列出完整清单让用户过目。
-- **不替用户记 token、不外泄密钥。** 不在回复里明文打印 token；不把 token 写进任何文件。`-s` / `--show-sensitive` 的输出（数据库密码、连接串、内部地址）只在用户当下需要时给出，**不主动回显、不写入文件、不复制到聊天记录之外**；连接串里的密码尽量用 `***` 脱敏后再展示。
-- **错误不静默。** 命令失败时把真实报错给用户，不要"看起来没问题"地糊弄过去。
+- **When unsure, ask.** For any operation where you cannot be certain whether it affects production, stop and ask the user instead of deciding for them.
+- **Confirm batch operations one by one.** When running `deploy batch` or looping over multiple resources, first list the complete inventory for the user to review.
+- **Don't remember tokens for the user, and don't leak secrets.** Don't print tokens in plaintext in replies; don't write tokens into any file. The output of `-s` / `--show-sensitive` (database passwords, connection strings, internal addresses) is given only when the user currently needs it — **don't proactively echo it, don't write it to files, and don't copy it anywhere outside the chat**; mask passwords in connection strings with `***` before displaying them whenever possible.
+- **Don't silence errors.** When a command fails, give the real error to the user; don't paper over it as if "everything looks fine".

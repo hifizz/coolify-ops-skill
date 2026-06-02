@@ -1,40 +1,40 @@
 #!/usr/bin/env bash
-# install-cli.sh — 安装官方 Coolify CLI（coollabsio/coolify-cli）
-# 支持 macOS / Linux，自动检测；幂等，已装则跳过。
+# install-cli.sh — install the official Coolify CLI (coollabsio/coolify-cli)
+# Supports macOS / Linux with auto-detection; idempotent, skips if already installed.
 set -euo pipefail
 
 if command -v coolify >/dev/null 2>&1; then
-  echo "✅ coolify CLI 已安装：$(coolify --version 2>/dev/null || echo '版本未知')"
-  echo "   如需升级：coolify update"
+  echo "✅ coolify CLI already installed: $(coolify --version 2>/dev/null || echo 'version unknown')"
+  echo "   To upgrade: coolify update"
   exit 0
 fi
 
-echo "📦 未检测到 coolify CLI，开始安装..."
+echo "📦 coolify CLI not detected, starting installation..."
 
 OS="$(uname -s)"
 case "$OS" in
   Darwin|Linux)
-    # 官方安装脚本（装到 /usr/local/bin/coolify）
+    # Official install script (installs to /usr/local/bin/coolify)
     curl -fsSL https://raw.githubusercontent.com/coollabsio/coolify-cli/main/scripts/install.sh | bash
     ;;
   *)
-    echo "❌ 不支持的系统：$OS"
-    echo "   Windows 请用 PowerShell 运行："
+    echo "❌ Unsupported system: $OS"
+    echo "   On Windows, run in PowerShell:"
     echo "   irm https://raw.githubusercontent.com/coollabsio/coolify-cli/main/scripts/install.ps1 | iex"
     exit 1
     ;;
 esac
 
-# 验证
+# Verify
 if command -v coolify >/dev/null 2>&1; then
-  echo "✅ 安装成功：$(coolify --version)"
+  echo "✅ Installed successfully: $(coolify --version)"
   echo ""
-  echo "下一步："
-  echo "  1. 去 Coolify Web UI 的 /security/api-tokens 生成 token"
+  echo "Next steps:"
+  echo "  1. Generate a token at /security/api-tokens in the Coolify Web UI"
   echo "  2. coolify context add <name> <url> <token> -d"
   echo "  3. coolify context verify"
 else
-  echo "⚠️  安装脚本跑完了但 PATH 里还找不到 coolify。"
-  echo "   检查 /usr/local/bin 是否在 \$PATH 中，或重开终端。"
+  echo "⚠️  Install script finished but coolify is still not on PATH."
+  echo "   Check that /usr/local/bin is in \$PATH, or reopen your terminal."
   exit 1
 fi
