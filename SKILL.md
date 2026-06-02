@@ -1,6 +1,6 @@
 ---
 name: coolify-ops
-description: 通过官方 coolify CLI 远程操控 Coolify 实例，完成应用/服务/数据库的部署、运维、排障。Use this skill whenever the user wants to deploy, restart, redeploy, check logs, sync environment variables, manage databases, or troubleshoot any resource on a Coolify instance — including phrases like "部署到 Coolify"、"重启那个服务"、"看下部署日志"、"同步环境变量到线上"、"Coolify 上那个 app 挂了"，or when they mention a Coolify app/service/database UUID and want an operation performed. Also trigger when the user wants to set up the coolify CLI for the first time or add a new Coolify context.
+description: 通过官方 coolify CLI 远程操控 Coolify 实例，完成应用/服务/数据库的部署、运维、排障。Use this skill whenever the user wants to deploy, restart, redeploy, roll back, check logs or deployment status, scale or adjust resources, bind a domain, add/change/sync environment variables, create or back up databases, expose a database port, or troubleshoot any resource on a Coolify instance — including phrases like "部署到 Coolify"、"重启那个服务"、"看下部署日志"、"查部署状态"、"同步环境变量到线上"、"加个环境变量"、"给它绑个域名"、"扩容/调一下资源"、"备份数据库"、"回滚到上一个版本"、"把数据库端口暴露出去"、"Coolify 上那个 app 挂了"，or when they mention a Coolify app/service/database UUID and want an operation performed. Also trigger when the user wants to set up the coolify CLI for the first time or add a new Coolify context.
 ---
 
 # Coolify Ops
@@ -106,6 +106,8 @@ coolify database backup trigger <db-uuid> <backup-uuid>   # 立即备份
 支持类型：postgresql / mysql / mariadb / mongodb / redis / keydb / clickhouse / dragonfly。
 **删库前**务必走安全规则里的检查清单。
 
+**对外访问分支**：当请求涉及"让数据库对外 / 被其他机器 / 被 Vercel 访问"，或"用域名连库""暴露数据库端口"时，**先读 `references/database-access.md`**，按其推荐顺序（**内网 > 隧道 > 公网加固**）与用户确认，**不要直接 `--is-public`**。要点：数据库说 TCP 协议、不走 HTTP（`https://db.example.com` 连不上）；连库方与库同机走内网、在能常驻进程的外部机器走隧道、**Vercel 等 serverless 走 HTTP 层（裸 TCP 隧道对它走不通）**；确需公网先走 `safety-rules.md` 的 `--is-public` 标准流程并提醒默认无 TLS。
+
 ## 已知能力边界
 
 - **从零创建应用**（绑 Git 仓库、设构建命令）目前 CLI 支持不完整：`app update` 能改字段，但完整的 `app create` 尚未公开。第一次创建新应用通常仍需在 Web UI 完成，CLI 接管后续运维。遇到"创建新 app"请求时，明确告诉用户这一限制，引导他在 UI 建好骨架后再用 CLI 配置和部署。
@@ -116,6 +118,7 @@ coolify database backup trigger <db-uuid> <backup-uuid>   # 立即备份
 - `references/cli-cheatsheet.md` — 全量命令速查 + 排障表 + 输出格式与全局 flag。需要查具体命令语法时读它。
 - `references/deploy-patterns.md` — Node / Next.js / Docker / 静态站四类项目的部署配置模板、env 分层惯例、Coolify magic variables（SERVICE_URL_* / SERVICE_PASSWORD_*）。部署或排构建问题时读它。
 - `references/safety-rules.md` — 危险操作红线与确认清单。执行任何 delete/stop/强制操作前读它。
+- `references/database-access.md` — 如何从外部访问 Coolify 上的数据库：协议认知、内网/隧道/公网加固四级方案、用域名连库（Cloudflare 灰云）、TLS 警告。涉及"让数据库对外访问/暴露端口/用域名连库"时读它。
 
 ## 脚本
 

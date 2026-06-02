@@ -65,6 +65,9 @@ coolify $CTX_FLAG app deployments logs "$APP_UUID" -f
 echo "────────────────────────────────────────"
 echo "🔎 最近部署状态："
 if command -v jq >/dev/null 2>&1; then
+  # ⚠️ 字段名（application_uuid / resource_uuid / deployment_uuid / status）是基于通用约定推断的，未在真实 CLI 上验证。
+  #    首次使用请先跑 `coolify deploy list --format=json` 核对真实字段名，再依赖下面的过滤；
+  #    若字段名不符，jq 会过滤不到结果而自动降级为 `coolify deploy list`（表格）输出。
   coolify $CTX_FLAG deploy list --format=json 2>/dev/null \
     | jq -r --arg u "$APP_UUID" '[.[] | select(.application_uuid==$u or .resource_uuid==$u)] | sort_by(.created_at) | last | "  状态: \(.status // "unknown")  部署ID: \(.deployment_uuid // .uuid // "?")"' \
     2>/dev/null || coolify $CTX_FLAG deploy list

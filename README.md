@@ -1,8 +1,23 @@
 # coolify-ops
 
+> **兼容性**：Tested against coolify-cli vX.X.X / Coolify vX.X.X（请填入你实测的版本）。CLI 在持续演进，flag 以 `coolify <cmd> --help` 的实际输出为准。
+
 一个让 Claude Code / Codex 通过官方 `coolify` CLI 远程操控自托管 Coolify 实例的 Agent Skill。
 
 针对场景：本地 macOS + 远端 VPS（已装 Coolify），部署/运维 Node、Next.js、Docker 类服务。
+
+## 能力边界（能做 / 不能做）
+
+| ✅ 能做 | ❌ 不能做（需 Web UI） |
+|---|---|
+| 已有应用/服务的部署、重新部署 | **从零创建应用**（绑 Git 仓库、设构建命令）—— CLI 未完整支持 |
+| 运维与排障（看运行时/部署日志、查状态） | **一键服务的创建**（模板服务）—— 需在 Web UI 选模板 |
+| 环境变量同步（`env sync` 批量增改） | |
+| 数据库创建与备份 | |
+| 生命周期管理（start / stop / restart） | |
+| 数据库对外访问决策（内网/隧道/公网加固，见 `references/database-access.md`） | |
+
+惯例：在 Web UI 把"骨架"建好（新 app / 一键服务），CLI 接管后续的配置、部署与运维。
 
 ## 安装
 
@@ -43,6 +58,7 @@ coolify-ops/
 ├── references/
 │   ├── cli-cheatsheet.md       # 全量命令速查 + jq 配方 + 排障表
 │   ├── deploy-patterns.md      # Node/Next/Docker/静态站部署模板 + env 分层 + magic vars
+│   ├── database-access.md      # 数据库对外访问：协议认知 + 内网/隧道/公网加固 + 域名连库
 │   └── safety-rules.md         # 危险操作红线与确认清单
 └── scripts/
     ├── install-cli.sh          # 跨平台安装 CLI
