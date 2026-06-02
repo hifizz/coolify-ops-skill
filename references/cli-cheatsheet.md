@@ -97,7 +97,7 @@ coolify app deployments logs <app-uuid> <deployment-uuid> # a specific deploymen
 coolify deploy name <app-name>           # deploy by name (recommended, easy to remember)
 coolify deploy uuid <uuid>               # deploy by UUID
 coolify deploy batch <a>,<b>,<c>         # batch deploy multiple
-coolify deploy name <app-name> -f        # force deploy (deploy even with no changes; use with caution)
+coolify deploy name <app-name> --force   # force deploy (deploy even with no changes; --force only, no -f short)
 coolify deploy list                       # all deployment records
 coolify deploy get <deployment-uuid>      # single deployment details
 coolify deploy cancel <deployment-uuid>   # cancel an in-progress deployment
@@ -253,8 +253,13 @@ coolify teams members list     # members of the current team
 --token <token>     # temporarily override the token (CI scenarios)
 -s, --show-sensitive # show sensitive info (token/IP)
 --debug             # print the full HTTP request/response (troubleshooting lifesaver)
--f, --force         # skip confirmation (only use after the user has explicitly agreed)
 ```
+
+> **`-f` is overloaded and per-command — there is no global `--force`/`-f` in v1.6.2:**
+> - `coolify app delete <uuid> -f` / `--force` → **skips the delete confirmation prompt** (never add on your own initiative).
+> - `coolify deploy name|uuid <x> --force` → **force a redeploy** (note: `--force` only, **no `-f` short form** here).
+> - `coolify {app,service,database} env sync <x> -f <file>` → here `-f` is `--file`, the `.env` **path** (required) — completely safe, use it freely.
+> - `coolify database delete` has **no** force flag (instead: `--delete-volumes` / `--delete-configurations` / … , all default `true` — see `references/safety-rules.md`).
 
 Common jq recipes:
 

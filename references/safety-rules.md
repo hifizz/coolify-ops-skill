@@ -1,6 +1,6 @@
 # Destructive-operation red lines
 
-This skill operates on **real resources in production environments**. The following operations are irreversible or affect live services. **Before executing, you must restate to the user what is about to happen and wait for explicit confirmation.** **Never proactively add `-f`/`--force` to skip confirmation.**
+This skill operates on **real resources in production environments**. The following operations are irreversible or affect live services. **Before executing, you must restate to the user what is about to happen and wait for explicit confirmation.** **Never proactively add a confirmation-skipping flag** — `--force` (or its `-f` short) on `app delete`, or `--force` on `deploy`. ⚠️ Note `-f` is overloaded: on `{app,service,database} env sync` it means `--file` (the `.env` path, required) and is completely safe — don't avoid *that* one. There is no global `--force` in v1.6.2; see the per-command breakdown in `references/cli-cheatsheet.md` (Output formats & global flags).
 
 ## Severity tiers
 
@@ -20,7 +20,7 @@ This skill operates on **real resources in production environments**. The follow
 | Operation | Consequence |
 |---|---|
 | `coolify app stop` / `service stop` / `database stop` (production) | The live service goes offline, visible to users |
-| `coolify deploy ... -f` (force deploy) | May overwrite a working version; first confirm that forcing is genuinely needed |
+| `coolify deploy name\|uuid ... --force` (force deploy) | May overwrite a working version; first confirm that forcing is genuinely needed (`--force` only — no `-f` short) |
 | `coolify app restart` (production peak hours) | Brief interruption; safer during off-peak hours |
 | `coolify database backup delete` | Deletes a backup, reducing recoverability |
 | `coolify database create/update ... --is-public` (public database port) | Exposes the database TCP port to the public internet, visible to internet-wide scanners; Coolify databases **do not enable TLS** by default, so plaintext credentials/data are at risk of leaking. **Never default to this**; first follow the standard procedure below |

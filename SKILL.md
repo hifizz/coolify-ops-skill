@@ -23,7 +23,7 @@ Remotely operate a Coolify instance through the official `coolify` CLI (the Go v
 
 3. **JSON for yourself, table for people.** When you need to parse the output (grab a UUID, judge state), always add `--format=json` and extract with `jq`. When showing state directly to the user, use the default table.
 
-4. **Confirm destructive operations first.** For irreversible operations or anything that affects production — `delete`, `stop` (production), forced deploys — you must restate to the user what you're about to do and wait for confirmation before executing. See `references/safety-rules.md`. **Never add `-f` to skip confirmation on your own initiative.**
+4. **Confirm destructive operations first.** For irreversible operations or anything that affects production — `delete`, `stop` (production), forced deploys — you must restate to the user what you're about to do and wait for confirmation before executing. See `references/safety-rules.md`. **Never add a confirmation-skipping flag on your own initiative** — `--force`/`-f` on `app delete`, or `--force` on `deploy`. (Note: `env sync`'s `-f` is `--file`, the `.env` path — safe and required, not `--force`.)
 
 5. **Always look up UUIDs, never guess them.** Before any operation targeting a specific resource, run `coolify <resource> list --format=json` to get the real UUID. Never fabricate or reuse a UUID from memory.
 
