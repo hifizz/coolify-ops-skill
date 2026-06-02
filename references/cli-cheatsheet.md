@@ -227,8 +227,8 @@ Persistent volumes / file mounts for stateful resources — same shape for `app`
 coolify app storage list <app-uuid>
 coolify app storage create <app-uuid> --type persistent --name <vol> --mount-path /data
 coolify app storage create <app-uuid> --type file --mount-path /etc/app/config.yml --content "$(cat config.yml)"
-coolify app storage update <app-uuid> <storage-uuid> ...
-coolify app storage delete <app-uuid> <storage-uuid>       # dangerous: may delete persisted data
+coolify app storage update <app-uuid> --uuid <storage-uuid> --type persistent --mount-path /data   # update: storage id is --uuid, NOT a 2nd positional
+coolify app storage delete <app-uuid> <storage-uuid>       # delete: storage id IS a 2nd positional (dangerous: may delete persisted data)
 
 # database / service are identical — just swap the noun:
 coolify database storage list <db-uuid>
