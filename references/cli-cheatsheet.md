@@ -88,6 +88,8 @@ coolify deploy get <deployment-uuid>      # 单个部署详情
 coolify deploy cancel <deployment-uuid>   # 取消进行中的部署
 ```
 
+> ⚠️ **`deploy list --format=json` 的字段名未实测**：`deploy-and-watch.sh` 按 `application_uuid` / `resource_uuid` / `deployment_uuid` / `status` 过滤来定位最近一次部署，但这些字段名是基于通用约定推断的。首次使用请先跑 `coolify deploy list --format=json` 看真实结构，再决定按哪个字段过滤。
+
 ## 环境变量 Env
 
 > app 和 service 的 env 子命令完全一致，下面以 app 为例。
@@ -127,11 +129,13 @@ coolify database delete <uuid>   # 危险，需确认
 coolify database backup list <db-uuid>
 coolify database backup create <db-uuid> \
   --frequency "0 2 * * *" --enabled \
-  [--save-s3 --s3-storage-uuid <uuid>] \
-  [--retention-days-local 7] [--retention-amount-local 5]
+  [--save-s3 --s3-storage-uuid <uuid>] \           # ⚠️ 未实测，以 --help 为准
+  [--retention-days-local 7] [--retention-amount-local 5]   # --retention-amount-local ⚠️ 未实测，以 --help 为准
 coolify database backup trigger <db-uuid> <backup-uuid>       # 立即备份
 coolify database backup executions <db-uuid> <backup-uuid>    # 备份执行记录
 ```
+
+> ⚠️ **以下 backup flag 未在真实 CLI 上验证**，是基于通用约定推断的：`--save-s3`、`--s3-storage-uuid`、`--retention-amount-local`。使用前先 `coolify database backup create --help` 核对真实 flag 名与语义；`--retention-days-local` 同样以 --help 为准。
 
 cron 速记：`"0 2 * * *"` = 每天 02:00；`"0 */6 * * *"` = 每 6 小时。
 
@@ -187,7 +191,7 @@ coolify resources list --format=json | jq -r '.[] | select(.status!="running") |
 | `connection refused` / 超时 | URL 错；VPS 防火墙没放行；Coolify 没起来 | 先 `curl -I <url>` 测 Web 入口；检查 VPS 防火墙端口 |
 | `401 Unauthorized` | Token 错或被删 | Web UI 重新生成 token，`coolify context set-token` 更新 |
 | `403 Forbidden` | Token 权限不足 | 检查该 token 在 Coolify 里的权限范围 |
-| `certificate verify failed` | HTTPS 证书没配好 | 临时用 http://，或先在 Coolify 配好 TLS |
+| `certificate verify failed` | HTTPS 证书没配好 | **优先**在 Coolify 配好 TLS 再连。⚠️ 降级到 `http://` 会让 Bearer Token 明文上链路，仅限可信内网/临时排查，且事后应轮换 token |
 | 命令找不到资源 | UUID 过期/记错 | 重新 `<resource> list --format=json` 拿 UUID |
 | 不确定 flag | CLI 版本差异 | `coolify <cmd> --help` 看当前版本实际 flag |
 | 想看请求细节 | — | 任意命令前加 `--debug` |
