@@ -108,13 +108,22 @@ Supported types: postgresql / mysql / mariadb / mongodb / redis / keydb / clickh
 
 **External access branch**: when a request involves "make the database externally accessible / reachable from another machine / reachable from Vercel", or "connect to the database via a domain" / "expose the database port", **first read `references/database-access.md`**, and confirm with the user following its recommended order (**internal > tunnel > hardened public exposure**); **don't go straight to `--is-public`**. Key points: a database speaks TCP, not HTTP (`https://db.example.com` won't connect); a client on the same machine as the database uses the internal network, an external machine that can keep a process running uses a tunnel, and **serverless platforms like Vercel go through the HTTP layer (a raw TCP tunnel won't work for them)**; if public exposure is truly required, first follow the standard `--is-public` procedure in `safety-rules.md` and warn that there is no TLS by default.
 
-## Resource Creation
+### F. Resource Creation (from scratch)
 
-The CLI can create resources from scratch (this is no longer Web-UI-only):
+The CLI can create resources from scratch (this is no longer Web-UI-only). **First gather the placement UUIDs**, then run the create command:
 
-- **App**: `coolify app create <public|github|deploy-key|dockerfile|dockerimage> --server-uuid <s> --project-uuid <p> --environment-name <env> ...` — binds a git repo (or Dockerfile/image), sets build pack and ports. See `references/cli-cheatsheet.md`.
-- **One-click service**: `coolify service create <type>` (run `coolify service create --list-types` to list types like wordpress / ghost / n8n / supabase).
+```bash
+coolify server list --format=json   # → --server-uuid
+coolify project list --format=json  # → --project-uuid
+coolify project get <project-uuid>  # → the environment name/uuid under that project
+```
+
+- **App**: `coolify app create <public|github|deploy-key|dockerfile|dockerimage> --server-uuid <s> --project-uuid <p> --environment-name <env> ...` — binds a git repo (or Dockerfile/image), sets build pack and ports. Required for `public`: `--git-repository`, `--git-branch`, `--build-pack`, `--ports-exposes` (plus the three placement flags above). See `references/cli-cheatsheet.md`.
+- **One-click service**: `coolify service create <type> --server-uuid <s> --project-uuid <p> --environment-name <env>` (run `coolify service create --list-types` to list types like wordpress / ghost / n8n / supabase).
 - **Database**: `coolify database create <type> ...` (path E above).
+- **Project** (if none exists yet): `coolify project create --name <n>`.
+
+> Create commands carry many flags and change across CLI versions — always run `coolify app create <source> --help` (or the matching `--help`) to confirm the exact flags before executing.
 
 The Web UI is still handy for first-time visual setup, dashboards/metrics, and some advanced settings — but creation no longer requires it.
 
