@@ -21,7 +21,7 @@ The agent enables this skill automatically: look up the UUID → trigger the dep
 ## Requirements
 
 - A self-hosted **Coolify** instance (typically one VPS running a few Node / Next.js / Docker services).
-- A Coolify **API token** (generate it in the Web UI under `/security/api-tokens`).
+- A Coolify **API token** (generate it in the Web UI under `/security/api-tokens`). **Scope it least-privilege**: `read` + `deploy` for day-to-day ops, add `write` only to change config / create resources, and **never** hand an agent a `root` token. Details in [`references/safety-rules.md`](references/safety-rules.md).
 - The official **coolify CLI** ([coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli), the Go build — install it with the script below).
 - **Claude Code**, or any other agent that supports `SKILL.md` (e.g. Codex).
 

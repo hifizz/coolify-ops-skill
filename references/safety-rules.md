@@ -62,6 +62,16 @@ Before executing any database **creation or modification** that includes `--is-p
 
 > The order of recommendation is always: **internal > tunnel > public hardening**. `--is-public` is the last option, and is never the default. For a full comparison of approaches, see `references/database-access.md`.
 
+## Token permissions (least privilege) and the 403 signal
+
+The token's abilities cap how much an agent can do — this is the primary blast-radius control, more reliable than any "the agent will be careful" promise. Coolify (Laravel Sanctum) abilities: `read` / `deploy` / `write` / `read:sensitive` / `root`.
+
+- **Recommended scoping**: day-to-day ops = `read` + `deploy`; add `write` only to change config or create resources; **never** issue a `root` token (it bypasses every check and can toggle the API itself). See `SKILL.md` → First-Time Setup for the full table.
+- **`read:sensitive` = server-side redaction.** When the token lacks it, the server redacts passwords / secrets / compose before they ever reach the wire, and `-s` / `--show-sensitive` comes back empty. This is a hard boundary, not an honor system — prefer withholding it unless secret values are genuinely needed.
+- **Allowed IPs**: restrict the token's source IPs in the Coolify API settings; blank / `0.0.0.0` means anyone holding the token can use it.
+- **Team scoping**: a token only sees its own team's resources; managing another team needs a separate token.
+- **On `403 Forbidden`, read the response body.** Coolify's 403 lists the *missing* permissions. Run the failing command with `--debug` to see that body and identify exactly which ability the token lacks — then either add that ability in the Web UI or stop, rather than guessing. Do **not** "fix" a 403 by reaching for a `root` token.
+
 ## Meta-rules for the Agent
 
 - **When unsure, ask.** For any operation where you cannot be certain whether it affects production, stop and ask the user instead of deciding for them.

@@ -202,7 +202,7 @@ coolify resources list --format=json | jq -r '.[] | select(.status!="running") |
 |---|---|---|
 | `connection refused` / timeout | Wrong URL; VPS firewall not opened; Coolify not running | First test the web entry point with `curl -I <url>`; check the VPS firewall ports |
 | `401 Unauthorized` | Token wrong or deleted | Regenerate the token in the Web UI, update with `coolify context set-token` |
-| `403 Forbidden` | Insufficient token permissions | Check the permission scope of that token in Coolify |
+| `403 Forbidden` | Token is missing a required ability (`read`/`deploy`/`write`/`read:sensitive`) | Re-run with `--debug` and read the 403 body — it lists the **missing permissions**. Add that ability to the token in the Web UI; never escalate to a `root` token. See `references/safety-rules.md` |
 | `certificate verify failed` | HTTPS certificate not configured properly | **Preferably** configure TLS in Coolify before connecting. ⚠️ Downgrading to `http://` sends the Bearer Token in plaintext over the wire; only for trusted internal networks/temporary troubleshooting, and the token should be rotated afterward |
 | Command can't find a resource | UUID expired/misremembered | Run `<resource> list --format=json` again to get the UUID |
 | Unsure about a flag | CLI version differences | `coolify <cmd> --help` to see the actual flags for the current version |

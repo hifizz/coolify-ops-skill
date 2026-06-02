@@ -44,6 +44,24 @@ coolify context add <name> <url> <token> -d
 coolify context verify
 ```
 
+### Token permissions (least privilege)
+
+The token's abilities are the real control over how much damage a runaway agent can do — set them when generating the token in the Web UI, not afterward. Coolify (Laravel Sanctum) abilities:
+
+| Ability | Grants | Recommendation |
+|---|---|---|
+| `read` | read all non-sensitive resources | baseline, always include |
+| `deploy` | trigger deployments / restarts | include for day-to-day ops |
+| `write` | create / update / delete config & resources | add **only** when you'll change config or create resources |
+| `read:sensitive` | reveal passwords / secrets / full compose | add **only** if the agent genuinely needs secret values (see below) |
+| `root` | bypass every permission check; can even toggle the API itself | **never** — do not issue a `root` token to an agent |
+
+- **Day-to-day ops** (deploy, logs, restart, status): `read` + `deploy`.
+- **Changing config or creating resources** (`app/service/database create`, `update`, `env sync`): add `write`.
+- **`read:sensitive` is server-side redaction, not an honor system.** Without it, the server itself redacts passwords / keys / compose, and `-s` / `--show-sensitive` returns nothing — that's a harder guarantee than "the agent promises not to print secrets". Only grant it when secret values are actually needed.
+- **Allowed IPs**: in the Coolify API settings, restrict the token's source IPs to your known address(es). Leaving it blank / `0.0.0.0` means any host with the token can use it — not recommended for production.
+- **Team scoping**: a token only sees resources in its own team. To manage another team, generate a separate token for it.
+
 When it can't connect, work through the "Troubleshooting" section of `references/cli-cheatsheet.md` item by item.
 
 ## Operations Decision Tree

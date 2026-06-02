@@ -21,7 +21,7 @@ Agent 会自动启用本 skill：查 UUID → 触发部署 → 跟随日志 → 
 ## 环境要求
 
 - 一台自托管的 **Coolify** 实例（典型：一台 VPS + 已部署若干 Node / Next.js / Docker 服务）。
-- 一个 Coolify **API Token**（在 Web UI 的 `/security/api-tokens` 生成）。
+- 一个 Coolify **API Token**（在 Web UI 的 `/security/api-tokens` 生成）。**按最小权限授予**：日常运维用 `read` + `deploy`,改配置 / 创建资源才加 `write`,**绝不**给 Agent 用 `root` token。详见 [`references/safety-rules.md`](references/safety-rules.md)。
 - 官方 **coolify CLI**（[coollabsio/coolify-cli](https://github.com/coollabsio/coolify-cli)，Go 版本，可用下方脚本一键安装）。
 - **Claude Code**，或其它支持 `SKILL.md` 的 Agent（如 Codex）。
 
