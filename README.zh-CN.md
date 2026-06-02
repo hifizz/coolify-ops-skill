@@ -138,4 +138,4 @@ coolify-ops/
 
 ## License
 
-[MIT](LICENSE) © 2025 hifizz
+[MIT](LICENSE) © 2026 hifizz

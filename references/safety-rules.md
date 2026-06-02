@@ -8,11 +8,11 @@ This skill operates on **real resources in production environments**. The follow
 
 | Operation | Consequence | Must do before executing |
 |---|---|---|
-| `coolify database delete <uuid>` | Deletes the database; data may be permanently lost | 1. Confirm there is a recent backup: `coolify database backup executions`; 2. Restate the database name to the user; 3. Wait for an explicit "confirm delete" |
+| `coolify database delete <uuid>` | Deletes the database; data may be permanently lost | 1. Confirm there is a recent backup: `coolify database backup executions <db-uuid> <backup-uuid>`; 2. Restate the database name to the user; 3. Wait for an explicit "confirm delete" |
 | `coolify app delete <uuid>` | Deletes the app and its configuration | Restate the app name + confirm; remind about associated data/volumes |
 | `coolify service delete <uuid>` | Deletes the service | Restate the service name + confirm |
 | `coolify context delete <name>` | Deletes the local connection config | Confirm whether you still need to manage that instance |
-| `coolify app env delete` | Deletes an environment variable | Confirm that the variable has no references in use |
+| `coolify app env delete <app-uuid> <env-uuid>` | Deletes an environment variable | Confirm that the variable has no references in use |
 | Any command with `--delete-volumes` | Deletes data volumes | This is data destruction, the highest level of confirmation |
 
 ### 🟡 Caution: affects live availability, requires confirmation in production

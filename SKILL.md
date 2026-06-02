@@ -36,7 +36,7 @@ Remotely operate a Coolify instance through the official `coolify` CLI (the Go v
 
 ```bash
 # 1. Check whether it's already installed
-coolify --version || bash scripts/install-cli.sh
+coolify version || bash scripts/install-cli.sh
 
 # 2. Check whether a context already exists
 coolify context list

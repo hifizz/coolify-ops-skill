@@ -9,9 +9,9 @@
 set -uo pipefail
 
 MIN_VER="1.6.2"
-CTX_FLAG=""
+CTX_ARGS=()
 if [ "${1:-}" != "" ]; then
-  CTX_FLAG="--context=$1"
+  CTX_ARGS=(--context="$1")
   echo "🔍 Using context: $1"
 fi
 
@@ -55,7 +55,7 @@ fi
 
 # ── 3/4 connectivity + auth ──
 echo "── 3/4 context connectivity + auth ──"
-if coolify $CTX_FLAG context verify >/dev/null 2>&1; then
+if coolify "${CTX_ARGS[@]}" context verify >/dev/null 2>&1; then
   ok "context verified (URL reachable + token valid)"
 else
   bad "context verify failed. Check: URL reachable ('curl -I <url>'), token valid (Web UI /security/api-tokens), VPS firewall."
@@ -64,10 +64,10 @@ fi
 # ── 4/4 token abilities ──
 echo "── 4/4 token abilities ──"
 # read probe: 'resource list' needs the 'read' ability.
-if coolify $CTX_FLAG resource list --format=json >/dev/null 2>&1 </dev/null; then
+if coolify "${CTX_ARGS[@]}" resource list --format=json >/dev/null 2>&1 </dev/null; then
   ok "read: 'resource list' works → token has 'read'."
 else
-  ROUT="$(coolify $CTX_FLAG resource list --debug 2>&1 </dev/null || true)"
+  ROUT="$(coolify "${CTX_ARGS[@]}" resource list --debug 2>&1 </dev/null || true)"
   if echo "$ROUT" | grep -qiE "403|forbidden|permission"; then
     bad "read: 403 / permission error → token is missing the 'read' ability."
   else
@@ -77,7 +77,7 @@ fi
 # deploy probe: uses a deliberately non-existent target, so NOTHING is ever deployed.
 # A token without 'deploy' is rejected with 403 before the target is even checked;
 # a token with 'deploy' gets a 404/not-found for the bogus uuid.
-DOUT="$(coolify $CTX_FLAG deploy uuid "doctor-probe-nonexistent-uuid" --debug 2>&1 </dev/null || true)"
+DOUT="$(coolify "${CTX_ARGS[@]}" deploy uuid "doctor-probe-nonexistent-uuid" --debug 2>&1 </dev/null || true)"
 if echo "$DOUT" | grep -qiE "403|forbidden"; then
   warn "deploy: probe got 403 → token likely lacks the 'deploy' ability (add it in the Web UI if you need to deploy)."
 else

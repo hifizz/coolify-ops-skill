@@ -12,7 +12,8 @@ OUT_DIR="$SKILL_DIR/references/_generated"
 command -v coolify >/dev/null 2>&1 || { echo "❌ coolify CLI not found. Run install-cli.sh first."; exit 1; }
 
 VER="$(coolify version 2>/dev/null | head -n1 || echo unknown)"
-echo "📚 Generating reference from coolify CLI v${VER} → references/_generated/"
+VER_DISPLAY="${VER#v}"   # strip optional leading 'v' for display
+echo "📚 Generating reference from coolify CLI v${VER_DISPLAY} → references/_generated/"
 mkdir -p "$OUT_DIR"
 
 # Markdown docs (one file per command tree) — human + agent readable
