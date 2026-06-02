@@ -253,8 +253,7 @@ coolify teams members list     # members of the current team
 --format=json       # for scripts/Agents to parse, used with jq
 --format=pretty     # indented JSON, for debugging
 
---context=<name>    # temporarily specify a context
---host <fqdn>       # temporarily override the URL
+--context=<name>    # temporarily target a different context (the only ad-hoc way to switch instance)
 --token <token>     # temporarily override the token (CI scenarios)
 -s, --show-sensitive # show sensitive info (token/IP)
 --debug             # print the full HTTP request/response (troubleshooting lifesaver)
