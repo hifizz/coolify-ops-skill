@@ -115,7 +115,7 @@ coolify context verify
 
 - **危险操作要确认**：删库 / 删应用 / 停生产 / 强制部署等，Agent 会先复述影响并等你确认，**绝不主动加 `-f` 跳过确认**。详见 [`references/safety-rules.md`](references/safety-rules.md)。
 - **数据库别随手怼公网**：让数据库被外部访问时，推荐度是 **内网 > 隧道 > 公网加固**，默认不开 `--is-public`。用域名连库要关掉 Cloudflare 橙云，且 Coolify 默认数据库**不开 TLS**（公网明文连接会暴露凭据）。完整说明见 [`references/database-access.md`](references/database-access.md)。
-- **凭据不外泄**：Agent 不在回复里明文打印 token、不写进文件；`--show-sensitive` 带出的密码 / 连接串按需脱敏。
+- **凭据不外泄**：Agent 不在回复里明文打印 token,也不把它从 CLI 自身的配置文件（`~/.config/coolify/config.json`,权限 `0600`,CLI 在此合法存储）里复制出来;`--show-sensitive` 带出的密码 / 连接串按需脱敏。
 - **flag 以 `--help` 为准**：CLI 在演进，若某个 flag 或 JSON 字段看起来不对，先 `coolify <cmd> --help` 核对再依赖。
 
 ## 项目结构

@@ -119,7 +119,7 @@ Once configured, you don't need to memorize commands — describe what you want 
 
 - **Destructive actions are confirmed.** Deleting a database/app, stopping production, force-deploying, and the like — the agent restates the impact and waits for your confirmation, and **never adds `-f` to skip confirmation on its own**. See [`references/safety-rules.md`](references/safety-rules.md).
 - **Don't expose databases to the public carelessly.** When a database needs external access, the order of preference is **internal > tunnel > hardened public**, and `--is-public` is off by default. To connect over a domain, turn off Cloudflare's orange cloud, and note that Coolify databases ship **without TLS** by default (a plaintext public connection leaks credentials). Full guide: [`references/database-access.md`](references/database-access.md).
-- **Credentials stay private.** The agent won't print tokens in its replies or write them to files; passwords / connection strings surfaced by `--show-sensitive` are redacted as needed.
+- **Credentials stay private.** The agent won't print tokens in its replies or copy them out of the CLI's own config store (`~/.config/coolify/config.json`, mode `0600`, where the CLI legitimately keeps them); passwords / connection strings surfaced by `--show-sensitive` are redacted as needed.
 - **Trust `--help` over the cheatsheet.** The CLI evolves; if a flag or JSON field ever looks off, confirm with `coolify <cmd> --help` before relying on it.
 
 ## Project layout
