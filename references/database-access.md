@@ -68,7 +68,8 @@
 
 上面两种隧道都要求连库方**常驻一个 sidecar 进程**（`cloudflared access` 或 `tailscaled`）。Vercel 的 serverless/edge 函数是**短生命周期、无状态、跑不了常驻 sidecar**，所以**这两条路对 Vercel 都走不通**——照做的结果是函数根本连不上库。Vercel 连自托管数据库的可行姿势是：
 
-1. **在库前面挂一个会说 HTTP 的层**，让 Vercel 走 HTTPS 而不是裸 TCP——这是首选。例如 **PostgREST**（REST），或连接池/数据代理类（PgBouncer/Supabase 之类带 HTTP 入口、Prisma Accelerate、Neon/PlanetScale 这种 serverless HTTP driver）。详见 §5。
+1. **在库前面挂一个会说 HTTP 的层**，让 Vercel 走 HTTPS 而不是裸 TCP——这是首选。自托管最直接的是 **PostgREST**（把你的 Coolify Postgres 表暴露成 HTTPS REST）；也可用 **Prisma Accelerate** 这类 HTTP 数据代理。详见 §5。
+   - ⚠️ **PgBouncer 不算 HTTP 层**：它是 Postgres 协议的连接池，对外仍是裸 TCP，Vercel serverless 连它一样连不上；它只对"能开 TCP 连接的运行时"（常驻 Node 服务 / 另一台 VPS）解决连接数问题。
 2. **公网 TLS endpoint + 加固**（§2.3）。但 Vercel serverless **默认无固定出口 IP**，§2.3 的"防火墙限制来源 IP"基本使不上，除非用 Vercel 的静态出口 IP（Secure Compute，Enterprise）。
 3. **Cloudflare Spectrum**（Enterprise）给裸库一个真正的公网 TCP 端点，Vercel 无需 sidecar 直连——成本较高，按需评估。
 
@@ -141,7 +142,8 @@ postgresql://user:pass@db.example.com:5432/mydb
 
 - **浏览器管理界面**：部署 **pgweb**（Postgres）或 **Adminer**（多数据库）这类 Web 管理工具。它们是 HTTP 服务，**在内网连数据库**，自己对外走 HTTPS。
 - **REST API**：部署 **PostgREST**（把 Postgres 表自动暴露成 REST API）。同样是 HTTP 服务，内网连库。
-- **serverless 连库（Vercel 等）**：用带 HTTP 入口的连接池/数据代理（PgBouncer/Supabase 之类、Prisma Accelerate、Neon/PlanetScale 这种 serverless HTTP driver），或自托管 PostgREST——让 Vercel 函数走一次 HTTPS 请求，而不是维持一条裸 TCP 长连接。
+- **serverless 连库（Vercel 等）**：自托管首选 **PostgREST**（把库暴露成 HTTPS REST）；也可用 **HTTP 数据代理**（如 Prisma Accelerate），或本就托管在 **Neon / PlanetScale** 上、自带 serverless HTTP driver 的库——让 Vercel 函数发一次 HTTPS 请求，而不是维持一条裸 TCP 长连接。
+  - ⚠️ **PgBouncer 不是 HTTP 层**：它是 Postgres 协议的连接池，对外仍是裸 TCP；Vercel serverless 连它依旧是裸 TCP（连不上）。PgBouncer 只对"能开 TCP 连接的运行时"（常驻 Node 服务 / 另一台 VPS）解决连接数问题，别拿它给 serverless 当 HTTPS 入口。
 
 这些服务才可以正常绑 Traefik 域名、走 HTTPS、开橙云——因为它们说的就是 HTTP。数据库本身仍只在内网，不对公网暴露 TCP 端口。
 
