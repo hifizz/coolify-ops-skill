@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="hero.svg" alt="coolify-ops — operate your self-hosted Coolify through the official CLI, in natural language" width="820">
+</p>
+
 # coolify-ops
 
 **English** | [简体中文](README.zh-CN.md)

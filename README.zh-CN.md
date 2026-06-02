@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="hero.svg" alt="coolify-ops —— 用自然语言、通过官方 CLI 操控自托管 Coolify" width="820">
+</p>
+
 # coolify-ops
 
 [English](README.md) | **简体中文**
