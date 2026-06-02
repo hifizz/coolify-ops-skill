@@ -52,6 +52,8 @@ coolify app get <uuid>                     # details
 coolify app start|stop|restart <uuid>      # lifecycle
 coolify app delete <uuid>                  # delete (dangerous, requires confirmation; do not proactively add -f)
 coolify app logs <uuid>                     # runtime logs (container stdout)
+coolify app logs <uuid> -f                  # follow runtime logs (tail -f style)
+coolify app logs <uuid> -n 100              # last N lines (-n/--lines, default 100)
 coolify app previews delete <uuid> <pr-id>  # clean up a PR preview deployment
 
 # Create a new app from a git repo / Dockerfile / image (pick the source subcommand)
@@ -85,9 +87,12 @@ coolify app update <uuid> \
 coolify app deployments list <app-uuid>                  # past deployments
 coolify app deployments logs <app-uuid>                  # all logs from the most recent deployment
 coolify app deployments logs <app-uuid> -f               # follow in real time (tail -f style)
-coolify app deployments logs <app-uuid> -n 100           # last 100 lines
+coolify app deployments logs <app-uuid> -n 100           # last N lines (-n/--lines, 0 = all)
+coolify app deployments logs <app-uuid> --debuglogs      # include hidden/internal build commands
 coolify app deployments logs <app-uuid> <deployment-uuid> # a specific deployment
 ```
+
+> Both `app logs` and `app deployments logs` share `-f`/`--follow` and `-n`/`--lines`. Difference: `app logs` defaults to 100 lines; `app deployments logs` defaults to `0` = all, and additionally supports `--debuglogs`.
 
 **Difference between runtime logs vs deployment logs**: `app logs` shows the container's stdout after it is up and running (for troubleshooting runtime crashes); `app deployments logs` shows the build → push → startup process (for troubleshooting deployment failures).
 
