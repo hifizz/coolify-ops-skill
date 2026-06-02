@@ -60,11 +60,11 @@ coolify app previews delete <uuid> <pr-id>  # clean up a PR preview deployment
 coolify app create public      --server-uuid <s> --project-uuid <p> --environment-name <env> \
   --git-repository <url> --git-branch <branch> --build-pack nixpacks --ports-exposes 3000
 coolify app create github      --server-uuid <s> --project-uuid <p> --environment-name <env> \
-  --github-app-uuid <uuid> --git-repository <user/repo> --git-branch <branch> --ports-exposes 3000
+  --github-app-uuid <uuid> --git-repository <user/repo> --git-branch <branch> --build-pack nixpacks --ports-exposes 3000
 coolify app create deploy-key  ...    # private repo via SSH deploy key
 coolify app create dockerfile  ...    # build from a custom Dockerfile
 coolify app create dockerimage --server-uuid <s> --project-uuid <p> --environment-name <env> \
-  --docker-registry-image-name <image:tag> --ports-exposes 80
+  --docker-registry-image-name <image> --docker-registry-image-tag <tag> --ports-exposes 80
 
 # Change config of an EXISTING app (update, not create)
 coolify app update <uuid> \
