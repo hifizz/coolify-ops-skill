@@ -109,7 +109,7 @@ coolify app env sync <uuid> --file .env.production # incremental sync
 ```
 
 **Key semantics**: `env sync` is incremental — it overwrites existing variables and creates missing ones, **but does not delete variables that aren't in the file**. To mirror completely, first list and then delete each one (deletion is a destructive operation and requires confirmation).
-For variables needed at build time, add `--build-time`; for preview environments, use `--preview`. For env layering conventions, see `references/deploy-patterns.md`.
+For variables needed at build time, pass `--build-time=true`; for preview environments, use `--preview`. **Caveat**: `--build-time` (and `--runtime`) default to `true`, and `sync` applies one flag set to the whole file — so a bare sync of a `.env` containing secrets may carry them into the build layer. To keep secrets out, sync them in a separate pass with `--build-time=false`. For env layering conventions, see `references/deploy-patterns.md`.
 
 ### E. Databases and Backups
 

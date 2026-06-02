@@ -113,11 +113,16 @@ coolify app env delete <app-uuid> <env-uuid>
 
 # Batch sync from .env (most common)
 coolify app env sync <app-uuid> --file .env
-coolify app env sync <app-uuid> --file .env.production --build-time
+coolify app env sync <app-uuid> --file .env.public --build-time=true    # frontend / build-time vars
+coolify app env sync <app-uuid> --file .env.secret --build-time=false   # runtime-only, keep out of build layer
 ```
 
 **sync behavior**: updates existing + creates missing, and **does not delete** variables not present in the file.
-**flag meanings**: `--build-time` available at build time; `--preview` available for preview deployments; `--is-literal` no variable interpolation (use when the value contains `$`); `--is-multiline` multi-line values.
+**sync flags**: `--build-time` (default **true**) available at build time; `--runtime` (default **true**) available at runtime; `--preview` available in preview deployments; `--is-literal` no variable interpolation (use when the value contains `$`); `-f`/`--file` is the **path** (required), not `--force`.
+
+> ⚠️ **`--help` default vs. real behavior**: the help shows `--build-time (default: true)` and `--runtime (default: true)`, but a value is only sent when you **explicitly** pass the flag — a bare `sync` leaves both to the server default. So don't assume "bare sync = everything build-time", and don't assume "omitting `--build-time` keeps secrets out of the build layer". When you need a specific behavior, set it explicitly (`--build-time=false` / `--build-time=true`). And `sync` applies **one flag set to the entire file**, so split sensitive vs. non-sensitive into separate files/passes.
+
+> `env create` carries the same `--build-time` / `--runtime` (both default true), plus `--is-multiline` and `--comment`.
 
 ## Database
 
