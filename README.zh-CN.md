@@ -25,14 +25,43 @@ Agent 会自动启用本 skill：查 UUID → 触发部署 → 跟随日志 → 
 
 ## 安装
 
-把本目录放进 Agent 的 skills 目录即可自动加载：
+### 通过 [skills.sh](https://skills.sh)（推荐）
+
+装了 Node.js 的话，一条命令即可把本 skill 装进你的 Agent（无需手动 clone）：
 
 ```bash
+# 项目级——装到 ./.claude/skills（在项目目录内运行时的默认行为）
+npx skills add hifizz/coolify-ops-skill
+
+# 全局 / 用户级——装到 ~/.claude/skills（所有项目可用）
+npx skills add hifizz/coolify-ops-skill -g
+
+# 显式指定目标 Agent（默认用检测到的那个）
+npx skills add hifizz/coolify-ops-skill --agent claude-code
+```
+
+这会从本仓库拉取 `coolify-ops` 这个 skill。之后可用以下命令管理：
+
+```bash
+npx skills list                 # 列出已安装的 skill
+npx skills update coolify-ops   # 更新到最新版
+npx skills remove coolify-ops   # 卸载
+```
+
+> `skills.sh` 支持各类兼容 Agent —— Claude Code、Codex、Cursor、Copilot、Windsurf 等。可在 [skills.sh](https://skills.sh) 浏览目录。
+
+### 手动安装
+
+不想用 `npx`？clone 后把 skill 目录拷进 Agent 的 skills 目录（目录名须为 `coolify-ops`，与 skill 的 `name` 一致）：
+
+```bash
+git clone https://github.com/hifizz/coolify-ops-skill
+
 # Claude Code · 全局（对所有项目生效）
-cp -r coolify-ops ~/.claude/skills/
+cp -r coolify-ops-skill ~/.claude/skills/coolify-ops
 
 # Claude Code · 项目级（只对当前项目）
-cp -r coolify-ops .claude/skills/
+cp -r coolify-ops-skill .claude/skills/coolify-ops
 ```
 
 Codex 等其它 Agent，放到其对应的 skills 目录。
@@ -43,6 +72,7 @@ Codex 等其它 Agent，放到其对应的 skills 目录。
 
 ```bash
 # 1) 安装官方 coolify CLI（macOS / Linux 自动检测；已装则跳过）
+#    路径取决于安装范围：全局是 ~/.claude/skills/...，项目级是 ./.claude/skills/...
 bash ~/.claude/skills/coolify-ops/scripts/install-cli.sh
 
 # 2) 添加并设为默认 context（token 在 Coolify Web UI /security/api-tokens 生成）

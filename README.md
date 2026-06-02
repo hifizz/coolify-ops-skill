@@ -25,14 +25,43 @@ The agent enables this skill automatically: look up the UUID → trigger the dep
 
 ## Install
 
-Drop this directory into your agent's skills folder and it loads automatically:
+### Via [skills.sh](https://skills.sh) — recommended
+
+With Node.js installed, add this skill to your agent in one command (no clone needed):
 
 ```bash
-# Claude Code · global (applies to all projects)
-cp -r coolify-ops ~/.claude/skills/
+# Project-level — into ./.claude/skills (the default when run inside a project)
+npx skills add hifizz/coolify-ops-skill
+
+# Global / user-level — into ~/.claude/skills (available in every project)
+npx skills add hifizz/coolify-ops-skill -g
+
+# Target a specific agent explicitly (defaults to the detected one)
+npx skills add hifizz/coolify-ops-skill --agent claude-code
+```
+
+This pulls the `coolify-ops` skill from this repo. Manage it later with:
+
+```bash
+npx skills list                 # list installed skills
+npx skills update coolify-ops   # update to the latest version
+npx skills remove coolify-ops   # uninstall
+```
+
+> `skills.sh` works with any compatible agent — Claude Code, Codex, Cursor, Copilot, Windsurf, and more. Browse the directory at [skills.sh](https://skills.sh).
+
+### Manual install
+
+Prefer not to use `npx`? Clone and copy the skill folder into your agent's skills directory (the folder must be named `coolify-ops`, matching the skill's `name`):
+
+```bash
+git clone https://github.com/hifizz/coolify-ops-skill
+
+# Claude Code · global (all projects)
+cp -r coolify-ops-skill ~/.claude/skills/coolify-ops
 
 # Claude Code · per-project (current project only)
-cp -r coolify-ops .claude/skills/
+cp -r coolify-ops-skill .claude/skills/coolify-ops
 ```
 
 For Codex and other agents, place it in their respective skills directory.
@@ -43,6 +72,7 @@ Before letting the agent operate anything, install the CLI and configure a conne
 
 ```bash
 # 1) Install the official coolify CLI (auto-detects macOS / Linux; skips if already present)
+#    Path depends on install scope: ~/.claude/skills/... if global, ./.claude/skills/... if project-level.
 bash ~/.claude/skills/coolify-ops/scripts/install-cli.sh
 
 # 2) Add a context and set it as default (generate the token in the Coolify Web UI: /security/api-tokens)
